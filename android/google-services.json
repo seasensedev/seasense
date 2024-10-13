@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "246358053582",
+    "project_id": "geomapper-d2b26",
+    "storage_bucket": "geomapper-d2b26.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:246358053582:android:9100488ce5d463b6b6369f",
+        "android_client_info": {
+          "package_name": "com.geomapper.map"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "246358053582-95e65gm2ti0chd85b9dmrs8dleiu63rn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJvs2dfNESMdIKLdAFGtELsntSEVn11sw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "246358053582-95e65gm2ti0chd85b9dmrs8dleiu63rn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
