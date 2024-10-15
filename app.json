@@ -44,8 +44,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "91177fdf-751b-4964-bbc4-be1eb277a51e"
+        "projectId": "e9257a25-c095-4dd5-926d-625ebe3eff80"
       }
-    }
+    },
+    "owner": "kaizenics"
   }
 }
