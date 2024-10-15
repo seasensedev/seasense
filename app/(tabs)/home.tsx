@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl } from "react-native";
+import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import CustomLineChart from "@/components/DailyWaveChart";
-import icons from "@/constants/icons";
+import * as Location from 'expo-location';
+import { LocationObject } from 'expo-location';
+import HourlyWaveHeight from "../../components/HourlyWaveHeight";
+import HourlyWaveDirection from "../../components/HourlyWaveDirection";
+import HourlyWavePeriod from "../../components/HourlyWavePeriod";
+import icons from "../../constants/icons";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const Home = () => {
-  const [dailyWaveHeights, setDailyWaveHeights] = useState<number[]>([]);
-  const [dailyLabels, setDailyLabels] = useState<string[]>([]);
+  const [hourlyWaveHeights, setHourlyWaveHeights] = useState<number[]>([]);
+  const [hourlyWaveDirections, setHourlyWaveDirections] = useState<number[]>([]);
+  const [hourlyWavePeriods, setHourlyWavePeriods] = useState<number[]>([]);
+  const [hourlyLabels, setHourlyLabels] = useState<string[]>([]);
   const [temperature, setTemperature] = useState<number | null>(null);
   const [windSpeed, setWindSpeed] = useState<number | null>(null);
   const [windDirection, setWindDirection] = useState<number | null>(null);
@@ -19,10 +25,11 @@ const Home = () => {
   const [dailyWindDirections, setDailyWindDirections] = useState<number[]>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [locationAddress, setLocationAddress] = useState<string>("Loading...");
+  const [location, setLocation] = useState<LocationObject | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-   // Firebase Auth & Firestore
-
-   const auth = getAuth();
+  const auth = getAuth();
   const db = getFirestore();
 
   const getUserData = async () => {
@@ -37,13 +44,49 @@ const Home = () => {
     }
   };
 
-  // Weather API Data Fetch
+  // Fetch user's location
+  const getLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      setErrorMsg('Permission to access location was denied');
+      Alert.alert("Permission denied", "Location permission is required to fetch the weather data.");
+      return;
+    }
+
+    let location = await Location.getCurrentPositionAsync({});
+    setLocation(location);
+
+    // Reverse Geocoding to get the address
+    const reverseGeocode = await Location.reverseGeocodeAsync(location.coords);
+    if (reverseGeocode.length > 0) {
+      const address = `${reverseGeocode[0].city}, ${reverseGeocode[0].region}`;
+      setLocationAddress(address);
+    } else {
+      setLocationAddress("Address not available");
+    }
+
+    return location;
+  };
+
+  // Fetch weather data using the user's location
   const getWeatherData = async () => {
     try {
+      const location = await getLocation();
+      if (!location) return;
+
+      const { latitude, longitude } = location.coords;
+
+      // Weather API
       const weatherResponse = await fetch(
-        "https://api.open-meteo.com/v1/forecast?latitude=7.0731&longitude=125.6128&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&daily=weather_code,temperature_2m_max,wind_speed_10m_max,wind_direction_10m_dominant"
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&daily=weather_code,temperature_2m_max,wind_speed_10m_max,wind_direction_10m_dominant`
       );
       const weatherData = await weatherResponse.json();
+
+      // Marine Forecast API
+      const marineResponse = await fetch(
+        `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period&daily=&timezone=Asia%2FSingapore`
+      );
+      const marineData = await marineResponse.json();
 
       const {
         temperature_2m,
@@ -51,20 +94,26 @@ const Home = () => {
         wind_direction_10m,
         weather_code,
       } = weatherData.current;
-      const heights = weatherData.daily.temperature_2m_max;
-      const times = weatherData.daily.time;
+
+      const heights = marineData.hourly.wave_height;
+      const directions = marineData.hourly.wave_direction;
+      const periods = marineData.hourly.wave_period;
+      const times = marineData.hourly.time;
       const temperatures = weatherData.daily.temperature_2m_max;
       const dailyWeatherCodes = weatherData.daily.weather_code;
       const dailyWindSpeeds = weatherData.daily.wind_speed_10m_max || [];
       const dailyWindDirections =
         weatherData.daily.wind_direction_10m_dominant || [];
 
-      setTemperature(temperature_2m);
+        
+       setTemperature(temperature_2m);
       setWindSpeed(wind_speed_10m);
       setWindDirection(wind_direction_10m);
       setWeatherCodes(dailyWeatherCodes);
-      setDailyWaveHeights(heights);
-      setDailyLabels(times);
+      setHourlyWaveHeights(heights);
+      setHourlyWaveDirections(directions);
+      setHourlyWavePeriods(periods);
+      setHourlyLabels(getNextHours());
       setDailyTemperatures(temperatures);
       setDailyWindSpeeds(dailyWindSpeeds.slice(0, 4));
       setDailyWindDirections(dailyWindDirections.slice(0, 4));
@@ -168,6 +217,30 @@ const Home = () => {
 
   const nextDays = getNextDays();
 
+  const getNextHours = () => {
+  const currentHour = new Date();
+
+
+  const options: Intl.DateTimeFormatOptions = { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: false, 
+    timeZone: 'Asia/Singapore' 
+  };
+
+  const formatter = new Intl.DateTimeFormat('en-US', options);
+
+  const hours = Array.from({ length: 6 }, (_, i) => {
+    const hour = new Date(currentHour.setMinutes(0, 0, 0)); 
+    hour.setHours(hour.getHours() - (5 - i)); 
+    return formatter.format(hour);
+  });
+
+  return hours;
+};
+
+  const nextHours = getNextHours();
+
   const calculateRotation = (direction: number) => {
     // Rotation angle calculation based on wind direction
     // 0° is North, 90° is East, 180° is South, 270° is West
@@ -180,15 +253,27 @@ const Home = () => {
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View className="w-full">
+        <View className="">
           <Text className="text-black text-2xl font-psemibold pt-4">
             Hello {firstName ? firstName : "User"}!
           </Text>
-          <Text className="text-black text-lg font-regular ">
+          <Text className="text-black text-lg ">
             {loading
               ? "Loading..."
               : getCustomWeatherPhrase(getWeatherDescription(weatherCodes[0]))}
           </Text>
+            
+            <View className=" flex-row items-center pt-2">
+              <View className="flex flex-row rounded-full border border-[#0e4483] px-2 py-2">
+              <Image
+              source={icons.location}
+              className="w-4 h-4 mr-1.5"
+              resizeMode="contain"
+              style={{ tintColor: "#0e4483" }}
+              />
+              <Text className="text-[#0e4483] text-sm font-regular">{locationAddress}</Text>
+              </View>
+            </View>
 
           {/* Weather Forecast */}
           <LinearGradient
@@ -302,15 +387,45 @@ const Home = () => {
 
           {/* Wave Height Chart */}
           <View className="mt-6">
-            <Text className="text-black text-lg font-semibold">
-              Wave Heights (Davao City)
+            <Text className="font-pbold text-black text-lg font-semibold">
+              Wave Heights
             </Text>
             {loading ? (
               <Text>Loading...</Text>
             ) : (
-              <CustomLineChart
-                dailyWaveHeights={dailyWaveHeights}
-                dailyLabels={nextDays}
+              <HourlyWaveHeight
+                hourlyWaveHeights={hourlyWaveHeights.slice(0, 6)}
+                hourlyLabels={nextHours}
+              />
+            )}
+          </View>
+
+          {/* Wave Directions Chart */}
+          <View>
+            <Text className="font-pbold text-black text-lg font-semibold">
+              Wave Directions
+            </Text>
+            {loading ? (
+              <Text>Loading...</Text>
+            ) : (
+              <HourlyWaveDirection
+                hourlyWaveDirections={hourlyWaveDirections.slice(0, 6)}
+                hourlyLabels={nextHours}
+              />
+            )}
+          </View>
+
+          {/* Wave Periods Chart */}
+          <View>
+            <Text className="font-pbold text-black text-lg font-semibold">
+              Wave Periods
+            </Text>
+            {loading ? (
+              <Text>Loading...</Text>
+            ) : (
+              <HourlyWavePeriod
+                hourlyWavePeriods={hourlyWavePeriods.slice(0, 6)}
+                hourlyLabels={nextHours}
               />
             )}
           </View>

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/config/firebaseConfig";
-import { useAuth } from "@/hooks/useAuth";
-import FormField from "@/components/Forms/FormField";
-import CustomButton from "@/components/Buttons/CustomButton";
+import { db } from "../../config/firebaseConfig";
+import { useAuth } from "../../hooks/useAuth";
+import FormField from "../../components/Forms/FormField";
+import CustomButton from "../../components/Buttons/CustomButton";
 import { useRouter } from "expo-router";
 
 const locations = ["Davao City"];

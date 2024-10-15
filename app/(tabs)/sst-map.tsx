@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Alert } from 'react-native';
 import MapView, { Marker, UrlTile, PROVIDER_GOOGLE, Region,MapPressEvent } from 'react-native-maps';
-import { db } from '@/config/firebaseConfig';
+import { db } from '../../config/firebaseConfig';
 import { getDocs, collection, query, where } from 'firebase/firestore';
 
 

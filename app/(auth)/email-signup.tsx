@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, TextInput, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
-import CustomButton from "@/components/Buttons/CustomButton";
+import { useAuth } from "../../hooks/useAuth";
+import CustomButton from "../../components/Buttons/CustomButton";
 
 const EmailSignup = () => {
   const [email, setEmail] = useState("");

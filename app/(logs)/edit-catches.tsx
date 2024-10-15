@@ -19,7 +19,7 @@ import { getFirestore, doc, deleteDoc } from "firebase/firestore";
 import { getStorage, ref, deleteObject } from "firebase/storage";
 import { setDoc, getDoc } from "firebase/firestore";
 
-import icons from "@/constants/icons";
+import icons from "../../constants/icons";
 
 const EditCatches = () => {
   const router = useRouter();

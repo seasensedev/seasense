@@ -25,7 +25,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import icons from "@/constants/icons";
+import icons from "../../constants/icons";
 import { useFocusEffect } from "@react-navigation/native";
 
 const CatchDetails = () => {

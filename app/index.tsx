@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import SplashScreen from "@/app/splash-screen";
+import SplashScreen from "../app/splash-screen";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { SafeAreaView, ActivityIndicator } from "react-native";
 
 export default function Index() {

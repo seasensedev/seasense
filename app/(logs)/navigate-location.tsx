@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import LocationForm from "@/components/Forms/LocationForm";
+import LocationForm from "../../components/Forms/LocationForm";
 import { captureRef } from "react-native-view-shot";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestore, doc, setDoc, collection } from "firebase/firestore";

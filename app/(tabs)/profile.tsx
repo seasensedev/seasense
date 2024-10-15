@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import ProfileButton from "@/components/Buttons/ProfileButton";
-import AddButton from "@/components/Buttons/AddButton";
-import icons from "@/constants/icons";
+import ProfileButton from "../../components/Buttons/ProfileButton";
+import AddButton from "../../components/Buttons/AddButton";
+import icons from "../../constants/icons";
 import { useRouter } from "expo-router";
-import { auth } from "@/config/firebaseConfig";
+import { auth } from "../../config/firebaseConfig";
 import {
   getFirestore,
   doc,

@@ -11,10 +11,10 @@ import {
   ActivityIndicator, 
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import EditForm from "@/components/Forms/EditForm";
-import CustomButton from "@/components/Buttons/CustomButton";
-import DeleteButton from "@/components/Buttons/DeleteButton";
-import icons from "@/constants/icons";
+import EditForm from "../../components/Forms/EditForm";
+import CustomButton from "../../components/Buttons/CustomButton";
+import DeleteButton from "../../components/Buttons/DeleteButton";
+import icons from "../../constants/icons";
 import * as ImagePicker from "expo-image-picker";
 import { getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";

@@ -1,9 +1,19 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { Tabs } from 'expo-router';
-import icons from '../../constants/icons';
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, Image, TouchableOpacity, Animated, Easing } from "react-native";
+import { Tabs, useRouter } from "expo-router"; 
+import icons from "../../constants/icons";
 
-const TabIcon = ({ icon, color, name, focused }: { icon: any, color: string, name: string, focused: boolean }) => {
+const TabIcon = ({
+  icon,
+  color,
+  name,
+  focused,
+}: {
+  icon: any;
+  color: string;
+  name: string;
+  focused: boolean;
+}) => {
   return (
     <View className="items-center justify-center gap-1">
       <Image
@@ -22,121 +32,193 @@ const TabIcon = ({ icon, color, name, focused }: { icon: any, color: string, nam
   );
 };
 
-const HeaderIcon = ({ icon, onPress }: { icon: any, onPress: () => void }) => {
+const HeaderIcon = ({ icon, onPress }: { icon: any; onPress: () => void }) => {
   return (
     <TouchableOpacity onPress={onPress}>
       <Image
         source={icon}
         resizeMode="contain"
         className="w-7 h-7 ml-4"
-        style={{ tintColor: 'black' }}
+        style={{ tintColor: "black" }}
       />
     </TouchableOpacity>
   );
 };
 
-const TabsLayout = () => {
+const DropdownMenu = ({ visible }: { visible: boolean }) => {
+  const translateY = useRef(new Animated.Value(-100)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const router = useRouter(); 
+
+  const handleNavigation = (screenName: string) => {
+    router.push(screenName as never); 
+  };
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 70,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1, 
+          duration: 70,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: -100,
+          duration: 300,
+          easing: Easing.in(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
   return (
-    <Tabs screenOptions={{ 
-      tabBarShowLabel: false,
-      tabBarActiveTintColor: '#FFF',
-      tabBarInactiveTintColor: '#D4D5D5',
-      tabBarStyle: {
-        backgroundColor: '#0e4483',
-        borderTopWidth: 0,
-        height: 65,
-      },
-    }}>
-      <Tabs.Screen 
-        name="home" 
+    <Animated.View
+      className="absolute top-16 left-4 bg-white shadow-lg border border-black/20 rounded-lg z-50"
+      style={{
+        width: 120,
+        padding: 8,
+        opacity: opacity,
+        transform: [{ translateY: translateY }],
+      }}
+    >
+      <TouchableOpacity onPress={() => handleNavigation("/profile")}>
+        <Text className="font-pregular text-md py-2">Profile</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => handleNavigation("/user-settings")}>
+        <Text className="font-pregular text-md py-2">Settings</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => handleNavigation("/help")}>
+        <Text className="font-pregular text-md py-2">Help</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => handleNavigation("/feedback")}>
+        <Text className="font-pregular text-md py-2">Feedback</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+const TabsLayout = () => {
+  const [isDropdownVisible, setDropdownVisible] = useState(false);
+
+  const toggleDropdown = () => {
+    setDropdownVisible(!isDropdownVisible);
+  };
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: "#FFF",
+        tabBarInactiveTintColor: "#D4D5D5",
+        tabBarStyle: {
+          backgroundColor: "#0e4483",
+          borderTopWidth: 0,
+          height: 65,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="home"
         options={{
-          title: 'Dashboard',
+          title: "Dashboard",
           headerShown: true,
           headerLeft: () => (
-            <HeaderIcon 
-              icon={icons.menu}
-              onPress={() => console.log('Settings Pressed')}
-            />
-            
+            <>
+              <DropdownMenu visible={isDropdownVisible} />
+              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+            </>
           ),
-          
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon 
+            <TabIcon
               icon={icons.home}
               color={color}
               name="Home"
               focused={focused}
             />
           ),
-        }} 
+        }}
       />
-      <Tabs.Screen 
-        name="sst-map" 
+      <Tabs.Screen
+        name="sst-map"
         options={{
-          title: 'Sea Surface Temperature Map',
+          title: "Sea Surface Temperature Map",
           headerShown: true,
           headerLeft: () => (
-            <HeaderIcon 
-              icon={icons.menu}
-              onPress={() => console.log('Settings Pressed')}
-            />
+            <>
+              <DropdownMenu visible={isDropdownVisible} />
+              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+            </>
           ),
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon 
+            <TabIcon
               icon={icons.map}
               color={color}
               name="SST Map"
               focused={focused}
             />
           ),
-        }} 
+        }}
       />
-      <Tabs.Screen 
-        name="sonar" 
+      <Tabs.Screen
+        name="sonar"
         options={{
-          title: 'Sonar Data',
+          title: "Sonar Data",
           headerShown: true,
           headerLeft: () => (
-            <HeaderIcon 
-              icon={icons.menu}
-              onPress={() => console.log('Settings Pressed')}
-            />
+            <>
+              <DropdownMenu visible={isDropdownVisible} />
+              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+            </>
           ),
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon 
+            <TabIcon
               icon={icons.radar}
               color={color}
               name="Sonar Data"
               focused={focused}
             />
           ),
-        }} 
+        }}
       />
-      <Tabs.Screen 
-        name="profile" 
+      <Tabs.Screen
+        name="profile"
         options={{
-          title: 'Profile',
+          title: "Profile",
           headerShown: true,
           headerLeft: () => (
-            <HeaderIcon 
-              icon={icons.menu}
-              onPress={() => console.log('Settings Pressed')}
-            />
-            
+            <>
+              <DropdownMenu visible={isDropdownVisible} />
+              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+            </>
           ),
-          
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon 
+            <TabIcon
               icon={icons.profile}
               color={color}
               name="Profile"
               focused={focused}
             />
           ),
-        }} 
+        }}
       />
     </Tabs>
-   
   );
 };
 
