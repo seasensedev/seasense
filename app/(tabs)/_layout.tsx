@@ -177,9 +177,9 @@ const TabsLayout = () => {
         }}
       />
       <Tabs.Screen
-        name="sonar"
+        name="tracker"
         options={{
-          title: "Sonar Data",
+          title: "Tracker",
           headerShown: true,
           headerLeft: () => (
             <>
@@ -191,7 +191,7 @@ const TabsLayout = () => {
             <TabIcon
               icon={icons.radar}
               color={color}
-              name="Sonar Data"
+              name="Tracker"
               focused={focused}
             />
           ),
