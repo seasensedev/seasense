@@ -8,7 +8,7 @@ type ToastProps = {
   onHide: () => void;
 };
 
-const Toast: React.FC<ToastProps> = ({ visible, message, duration = 3000, onHide }) => {
+const Toast: React.FC<ToastProps> = ({ visible, message, duration = 1500, onHide }) => {
   const [fadeAnim] = useState(new Animated.Value(0)); // Initial fade value
 
   useEffect(() => {
