@@ -218,7 +218,9 @@ const TabsLayout = () => {
           ),
         }}
       />
+      
     </Tabs>
+    
   );
 };
 
