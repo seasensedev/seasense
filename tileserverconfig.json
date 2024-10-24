@@ -18,8 +18,8 @@
         "tileMargin": 0
     },
     "data":{
-        "sst_davao": {
-            "mbtiles": "sst_davao_3.mbtiles"
+        "try_6": {
+            "mbtiles": "try_6.mbtiles"
         }
     }
 }
