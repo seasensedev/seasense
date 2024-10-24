@@ -11,7 +11,10 @@ import {
 } from "react-native";
 import MapView, { Polyline } from "react-native-maps";
 import * as Location from "expo-location";
-import Toast from '../../components/Toaster/Toast'
+import Toast from "../../components/Toaster/Toast";
+import { ref, onValue } from "firebase/database";
+import { database } from "../../config/firebaseConfig"; // Import your database config
+
 
 export const SonarDataMap = () => {
   const [location, setLocation] =
@@ -24,18 +27,21 @@ export const SonarDataMap = () => {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [speed, setSpeed] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
+
+  const [temperature, setTemperature] = useState<number | null>(null);
 
   const showToast = (message: string) => {
     setToastMessage(message);
     setToastVisible(true);
   };
 
-
   const mapRef = useRef<MapView>(null);
-  const slideAnim = useRef(new Animated.Value(0)).current; // Animation for the modal
+  const slideAnim = useRef(new Animated.Value(0)).current; 
 
   useEffect(() => {
     (async () => {
@@ -53,21 +59,46 @@ export const SonarDataMap = () => {
     };
   }, [watchPositionSubscription]);
 
-  // Update the elapsed time every second
   useEffect(() => {
     if (isTracking && startTime) {
       const interval = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000)); // Elapsed time in seconds
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000)); 
       }, 1000);
       return () => clearInterval(interval);
     }
   }, [isTracking, startTime]);
 
+  useEffect(() => {
+    // Reference the sensor_data node in Firebase Realtime Database
+    const sensorDataRef = ref(database, "sensor_data/");
+
+    // Listen for changes to the sensor_data node
+    const unsubscribe = onValue(sensorDataRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        
+        // Extract the latest entry (or the one you need)
+        const keys = Object.keys(data); // Get all dynamic keys
+        const latestKey = keys[keys.length - 1]; // Assuming the latest is the last key
+
+        // Access the temperature for the latest key
+        const latestData = data[latestKey];
+        if (latestData && latestData.temperature) {
+          setTemperature(latestData.temperature); // Update state with new temperature value
+        }
+      } else {
+        setTemperature(null); // Handle when data doesn't exist
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const startTracking = async () => {
     if (!isTracking) {
       setIsTracking(true);
-      setStartTime(Date.now()); // Store the start time
-      setElapsedTime(0); // Reset elapsed time when starting
+      setStartTime(Date.now());
+      setElapsedTime(0);
 
       const subscription = await Location.watchPositionAsync(
         {
@@ -82,10 +113,8 @@ export const SonarDataMap = () => {
             { latitude, longitude },
           ]);
 
-          // Set speed in km/h
           setSpeed(speed ? parseFloat((speed * 3.6).toFixed(2)) : 0);
 
-          // Animate the map to the new location
           mapRef.current?.animateToRegion(
             {
               latitude,
@@ -100,12 +129,19 @@ export const SonarDataMap = () => {
 
       setWatchPositionSubscription(subscription);
     } else {
-      setIsTracking(false);
-      if (watchPositionSubscription) {
-        watchPositionSubscription.remove();
-        setWatchPositionSubscription(null);
-      }
-      showToast('Tracking Stopped');
+      // Start loading spinner when stopping tracking
+      setIsLoading(true);
+
+      // Delay stopping tracking by 300ms
+      setTimeout(() => {
+        setIsTracking(false);
+        if (watchPositionSubscription) {
+          watchPositionSubscription.remove();
+          setWatchPositionSubscription(null);
+        }
+        setIsLoading(false); // Stop loading spinner
+        showToast("Tracking Stopped");
+      }, 1200); // Delay for 300ms
     }
   };
 
@@ -135,7 +171,9 @@ export const SonarDataMap = () => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const drawerContent = () => (
@@ -154,18 +192,41 @@ export const SonarDataMap = () => {
     >
       <View className="flex flex-col justify-center space-y-5 mb-6">
         <View className="flex flex-col justify-center">
-          <Text className="font-pregular text-md text-center mb-8 uppercase">Time</Text>
-          <Text className="font-semibold text-5xl mb-8 text-center">{formatTime(elapsedTime)}</Text>
-          <Text className="font-pregular text-md text-center uppercase">Elapsed</Text>
+          <Text className="font-pregular text-md text-center mb-8 uppercase">
+            Time
+          </Text>
+          <Text className="font-semibold text-5xl mb-8 text-center">
+            {formatTime(elapsedTime)}
+          </Text>
+          <Text className="font-pregular text-md text-center uppercase">
+            Elapsed
+          </Text>
         </View>
 
-        <View className="py-[0.5px] bg-black/20">
+        <View className="py-[0.5px] bg-black/20"></View>
 
-        </View>
         <View className="flex flex-col justify-center">
-          <Text className="font-pregular text-md text-center mb-8 uppercase">Distance</Text>
-          <Text className="font-semibold text-7xl mb-8 text-center">{speed ? `${speed}` : "0.00"}</Text>
-          <Text className="font-pregular text-md text-center uppercase">km</Text>
+          <Text className="font-pregular text-md text-center mb-8 uppercase">
+            Distance
+          </Text>
+          <Text className="font-semibold text-7xl mb-8 text-center">
+            {speed ? `${speed}` : "0.00"}
+          </Text>
+          <Text className="font-pregular text-md text-center uppercase">
+            km
+          </Text>
+        </View>
+        
+        <View className="flex flex-col justify-center">
+          <Text className="font-pregular text-md text-center mb-8 uppercase">
+            Temperature
+          </Text>
+          <Text className="font-semibold text-7xl mb-8 text-center">
+            {temperature !== null ? `${temperature}` : "Loading..."}
+          </Text>
+          <Text className="font-pregular text-md text-center uppercase">
+            °C
+          </Text>
         </View>
       </View>
 
@@ -219,12 +280,16 @@ export const SonarDataMap = () => {
         <TouchableOpacity
           className="bg-[#1e5aa0] rounded-full px-6 py-3 items-center "
           onPress={startTracking}
+          disabled={isLoading} // Disable button while loading
         >
-          <Text className="font-psemibold text-white text-lg font-bold">
-            {isTracking ? "Stop Tracking" : "Start Tracking"}
-          </Text>
+          {isLoading && isTracking ? ( // Show spinner if loading and tracking
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text className="font-psemibold text-white text-lg font-bold">
+              {isTracking ? "Stop Tracking" : "Start Tracking"}
+            </Text>
+          )}
         </TouchableOpacity>
-       
       </View>
 
       <Modal
@@ -237,9 +302,9 @@ export const SonarDataMap = () => {
         {drawerContent()}
       </Modal>
 
-      <Toast 
-        visible={toastVisible} 
-        message={toastMessage} 
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
         onHide={() => setToastVisible(false)}
       />
     </View>
@@ -253,3 +318,4 @@ const styles = StyleSheet.create({
 });
 
 export default SonarDataMap;
+
