@@ -2,30 +2,31 @@
 import { initializeApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database'; // Import Realtime Database
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAemi9enHfC_GEG7ZAnQZiXsyzmZrMZoNI",
   authDomain: "geomapper-d2b26.firebaseapp.com",
   projectId: "geomapper-d2b26",
   storageBucket: "geomapper-d2b26.appspot.com",
   messagingSenderId: "246358053582",
-  appId: "1:246358053582:web:f9bfbeee8c0189d7b6369f"
+  appId: "1:246358053582:web:f9bfbeee8c0189d7b6369f",
+  databaseURL: "https://geomapper-d2b26-default-rtdb.asia-southeast1.firebasedatabase.app" // Add the Database URL
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
+  persistence: getReactNativePersistence(AsyncStorage),
 });
 
 // Initialize Firestore
+export const db = getFirestore(app);
 
-export const db = getFirestore(app); 
+// Initialize Realtime Database
+export const database = getDatabase(app);
 
 
 
