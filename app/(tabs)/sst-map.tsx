@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Alert } from 'react-native';
 import MapView, { Marker, UrlTile, PROVIDER_GOOGLE, Region,MapPressEvent } from 'react-native-maps';
-import { db } from '../../config/firebaseConfig';
+import { db } from '@/config/firebaseConfig';
 import { getDocs, collection, query, where } from 'firebase/firestore';
 
 
@@ -53,7 +53,7 @@ const SSTMap = () => {
       Alert.alert(
         'SST Data',
         `SST: ${foundData.sst} °C\nLocation: Lat: ${foundData.latitude}, Lon: ${foundData.longitude}`,
-        [{text: 'OK'}]
+        [{ text: 'OK' }]
       );
     }
   }
@@ -77,8 +77,8 @@ const SSTMap = () => {
         onPress={handlePress}
       >
         <UrlTile
-          urlTemplate="http://192.168.137.1:8080/data/sst_davao_3/{z}/{x}/{y}.png" //          urlTemplate="http://192.168.254.104:8080/data/sst_davao_3/{z}/{x}/{y}.png"
-          maximumZ={19} 
+          urlTemplate="http://192.168.1.227:8080/data/try_6/{z}/{x}/{y}.png" //          urlTemplate="http://192.168.254.104:8080/data/sst_davao_3/{z}/{x}/{y}.png"
+          maximumZ={12} 
           minimumZ={1}
           flipY={false}
         />
