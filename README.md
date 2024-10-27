@@ -1,7 +1,6 @@
-![SeaSense](https://github.com/user-attachments/assets/8462d5f5-a51f-4907-bea5-e06233042395)
+![SeaSense](https://github.com/user-attachments/assets/8a1b59bb-27eb-43f5-bb30-7b4116211159)
+
 ======
-
-
 
 > [!NOTE]
 > Our capstone project is still in progress in development. This is still not working well and we are addressing some challenges. You can also watch the Admin Panel side of our Project at [kaizenics/geomapper-admin](https://github.com/cosiercvs/geomapper-admin)
