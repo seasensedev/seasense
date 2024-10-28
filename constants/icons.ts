@@ -20,6 +20,7 @@ import down from '@/assets/icons/down.png';
 import plus from '@/assets/icons/plus.png';
 import location from '@/assets/icons/location.png';
 import edit from '@/assets/icons/edit.png';
+import route from '@/assets/icons/route.png';
 
 export default {
     map,
@@ -44,4 +45,5 @@ export default {
     plus,
     location,
     edit,
+    route,
 }
