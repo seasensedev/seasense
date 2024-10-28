@@ -90,7 +90,7 @@ const DropdownMenu = ({ visible }: { visible: boolean }) => {
 
   return (
     <Animated.View
-      className="absolute top-16 left-4 bg-white shadow-lg border border-black/20 rounded-lg z-50"
+      className="absolute top-16 left-4 bg-white shadow-lg shadow-black rounded-lg z-50"
       style={{
         width: 120,
         padding: 8,
@@ -99,16 +99,16 @@ const DropdownMenu = ({ visible }: { visible: boolean }) => {
       }}
     >
       <TouchableOpacity onPress={() => handleNavigation("/profile")}>
-        <Text className="font-pregular text-md py-2">Profile</Text>
+        <Text className="font-pmedium text-md py-2">Profile</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => handleNavigation("/user-settings")}>
-        <Text className="font-pregular text-md py-2">Settings</Text>
+        <Text className="font-pmedium text-md py-2">Settings</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => handleNavigation("/help")}>
-        <Text className="font-pregular text-md py-2">Help</Text>
+        <Text className="font-pmedium text-md py-2">Help</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => handleNavigation("/feedback")}>
-        <Text className="font-pregular text-md py-2">Feedback</Text>
+        <Text className="font-pmedium text-md py-2">Feedback</Text>
       </TouchableOpacity>
     </Animated.View>
   );

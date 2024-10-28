@@ -5,21 +5,24 @@ import EmailButton from "../components/Buttons/EmailButton";
 import GoogleButton from "../components/Buttons/GoogleButton";
 import images from "../constants/images";
 import { useRouter } from "expo-router";
-import { useAuth } from "../hooks/useAuth";
-import * as WebBrowser from 'expo-web-browser';
-
-WebBrowser.maybeCompleteAuthSession();
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
+  // Handle anonymous sign-in
+  const handleAnonymousSignIn = async () => {
+    setLoading(true);
     try {
-      await signInWithGoogle();
+      const auth = getAuth();
+      await signInAnonymously(auth);
+      console.log("Signed in anonymously");
+      router.push("/home"); 
     } catch (error) {
-      console.error('Google Sign-In Error:', error);
+      console.error("Anonymous Sign-In Error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,12 +44,12 @@ export default function SplashScreen() {
             resizeMode="contain"
           />
           <Text className="text-white text-center text-lg font-regular mt-4 mx-10 leading-5">
-            Find fishing spots and track marine fishes powered by SST and Sonar.
+            Find fishing spots, get weather forecasts, and track fish behaviors!
           </Text>
           <View className="mt-10">
             <GoogleButton
-              title="Continue with Google"
-              onPress={handleGoogleSignIn}
+              title="Continue as Guest"
+              onPress={handleAnonymousSignIn}
             />
             <EmailButton
               title="Continue with Email"

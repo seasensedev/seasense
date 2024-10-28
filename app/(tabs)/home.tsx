@@ -255,7 +255,7 @@ const Home = () => {
       >
         <View className="">
           <Text className="text-black text-2xl font-psemibold pt-4">
-            Hello {firstName ? firstName : "User"}!
+            Hello {firstName ? firstName : "Guest"}!
           </Text>
           <Text className="text-black text-lg ">
             {loading

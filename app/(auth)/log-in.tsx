@@ -1,12 +1,36 @@
-import React from "react";
-import { Text, View, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
 import EmailButton from "../../components/Buttons/EmailButton";
 import GoogleButton from "../../components/Buttons/GoogleButton";
 import { useRouter } from "expo-router";
-
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 export default function LogIn() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  // Handle anonymous login
+  const handleAnonymousLogin = async () => {
+    setLoading(true);
+    try {
+      const auth = getAuth();
+      await signInAnonymously(auth);
+      console.log("Logged in anonymously");
+      router.push("/home");
+    } catch (error) {
+      console.error("Anonymous Login Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#0e4483] justify-center items-center">
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 p-6 pt-24 bg-[#0e4483]">
@@ -16,10 +40,8 @@ export default function LogIn() {
 
       <View className="mt-5">
         <GoogleButton
-          title="Log in with Google"
-          onPress={() => {
-            console.log("Log In Pressed");
-          }}
+          title="Continue as Guest"
+          onPress={handleAnonymousLogin}
         />
         <EmailButton
           title="Log in with Email"
@@ -33,7 +55,9 @@ export default function LogIn() {
           Not yet a member?
         </Text>
         <TouchableOpacity onPress={() => router.push("/")}>
-          <Text className="text-white text-center mt-10 text-lg font-bold">Create account</Text>
+          <Text className="text-white text-center mt-10 text-lg font-bold">
+            Create account
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
