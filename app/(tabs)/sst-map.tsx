@@ -77,7 +77,7 @@ const SSTMap = () => {
         onPress={handlePress}
       >
         <UrlTile
-          urlTemplate="http://192.168.1.227:8080/data/try_6/{z}/{x}/{y}.png" //          urlTemplate="http://192.168.254.104:8080/data/sst_davao_3/{z}/{x}/{y}.png"
+          urlTemplate="http://192.168.114.49:8080/data/try_6/{z}/{x}/{y}.png" //          urlTemplate="http://192.168.254.104:8080/data/sst_davao_3/{z}/{x}/{y}.png"
           maximumZ={12} 
           minimumZ={1}
           flipY={false}

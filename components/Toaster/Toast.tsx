@@ -4,7 +4,7 @@ import { View, Text, Animated, StyleSheet } from 'react-native';
 type ToastProps = {
   visible: boolean;
   message: string;
-  duration?: number; // in milliseconds
+  duration?: number;
   onHide: () => void;
 };
 
@@ -15,20 +15,19 @@ const Toast: React.FC<ToastProps> = ({ visible, message, duration = 1500, onHide
     if (visible) {
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 300, // Fade in duration
+        duration: 300, 
         useNativeDriver: true,
       }).start();
-
-      // Automatically hide after the duration
+      
       const timeout = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 300, // Fade out duration
+          duration: 300, 
           useNativeDriver: true,
         }).start(onHide);
       }, duration);
 
-      // Cleanup the timeout
+      
       return () => clearTimeout(timeout);
     }
   }, [visible, fadeAnim, duration, onHide]);
