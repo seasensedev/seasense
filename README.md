@@ -1,10 +1,7 @@
-
-![GeoMapper](https://github.com/user-attachments/assets/1a629743-5a3f-4ff0-b256-35b68ed8c43f)
-======
-
+![SeaSense](https://github.com/user-attachments/assets/8a1b59bb-27eb-43f5-bb30-7b4116211159)
 
 > [!NOTE]
-> Our capstone project is still in progress in development. This is still not working well and we are addressing some challenges. You can also watch the Admin Panel side of our Project at [kaizenics/geomapper-admin](https://github.com/cosiercvs/geomapper-admin)
+> Our capstone project is still in progress in development. This is still not working well and we are addressing some challenges. 
 
 ## GitHub Forking and Pull Requests
 
@@ -15,11 +12,11 @@
 ### Cloning the Forked Repository
 1. Clone the forked repository to your local machine using:
    ```sh
-   git clone https://github.com/cosiercvs/geomapper.git
+   git clone https://github.com/cosiercvs/seasense.git
 
 2. Navigate into the repository's directory:
    ```sh
-   cd geomapper
+   cd seasense
 
 ### Creating a New Branch
 1. Create a new branch to make your changes
