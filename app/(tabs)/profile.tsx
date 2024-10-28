@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ProfileButton from "../../components/Buttons/ProfileButton";
@@ -26,71 +27,129 @@ import {
 } from "firebase/firestore";
 import { User } from "firebase/auth";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import FishingSpotList from "../../components/Profile/FishingSpotList";
+import TrackList from "../../components/Profile/TrackList";
+
+interface FishingSpot {
+  id: string;
+  latitude: number;
+  longitude: number;
+  description: string;
+  screenshotURL: string;
+  fishName: string;
+  fishWeight: number;
+  fishLength: number;
+  dayCaught: string;
+  timeCaught: string;
+}
+
+interface Track {
+  id: string;
+  trackName: string;
+  description: string;
+  distance: number;
+  duration: number;
+}
 
 const Profile = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [emailInitial, setEmailInitial] = useState<string>("");
-  const [firstName, setFirstName] = useState<string>("");
+  const [firstName, setFirstName] = useState<string>("Guest");
   const [lastName, setLastName] = useState<string>("");
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [fishingSpots, setFishingSpots] = useState<DocumentData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); 
+  const [fishingSpots, setFishingSpots] = useState<FishingSpot[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
+  const [selectedTab, setSelectedTab] = useState<string>("Catches");
+  const [tracks, setTracks] = useState<Track[]>([]);
 
   const fetchUserData = async () => {
     setLoading(true);
     const currentUser = auth.currentUser;
     if (currentUser) {
       setUser(currentUser);
-  
-      // Fetch user info from Firestore
-      const userDoc = doc(getFirestore(), "users", currentUser.uid);
-      const docSnap = await getDoc(userDoc);
-  
-      const email = currentUser.email || "";
-      const initial = email.split("@")[0];
-      setEmailInitial(`@${initial}`);
-  
-      if (docSnap.exists()) {
-        const data = docSnap.data() as DocumentData;
-        setFirstName(data?.firstName || "");
-        setLastName(data?.lastName || "");
-  
-        // Fetch profile picture from Firebase Storage
-        const storage = getStorage();
-        const profilePicRef = ref(
-          storage,
-          `profile_pictures/${currentUser.uid}`
-        );
-        try {
-          const url = await getDownloadURL(profilePicRef);
-          setProfilePicture(url);
-        } catch (error) {
-          console.log("No profile picture found");
-        }
-  
-        // Fetch fishing spot descriptions and screenshots from Firestore
-        const db = getFirestore();
-        const catchQuery = query(
-          collection(db, "log_catch"),
+
+      if (currentUser.isAnonymous) {
+        setFirstName("Guest");
+        setEmailInitial("@guest");
+      } else {
+        const userDoc = doc(getFirestore(), "users", currentUser.uid);
+        const docSnap = await getDoc(userDoc);
+
+        const email = currentUser.email || "";
+        const initial = email.split("@")[0];
+        setEmailInitial(`@${initial}`);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data() as DocumentData;
+          setFirstName(data?.firstName || "");
+          setLastName(data?.lastName || "");
+
+          const storage = getStorage();
+          const profilePicRef = ref(
+            storage,
+            `profile_pictures/${currentUser.uid}`
+          );
+          try {
+            const url = await getDownloadURL(profilePicRef);
+            setProfilePicture(url);
+          } catch (error) {
+            console.log("No profile picture found");
+          }
+
+          const db = getFirestore();
+
+          // Fetch Fishing Spots
+          const catchQuery = query(
+            collection(db, "log_catch"),
+            where("userId", "==", currentUser.uid)
+          );
+          const querySnapshot = await getDocs(catchQuery);
+          const spots = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              latitude: data.latitude,
+              longitude: data.longitude,
+              description: data.description,
+              screenshotURL: data.screenshotURL,
+              fishName: data.fishName,
+              fishWeight: data.fishWeight,
+              fishLength: data.fishLength,
+              dayCaught: data.dayCaught,
+              timeCaught: data.timeCaught,
+            } as FishingSpot;
+          });
+
+          setFishingSpots(spots);
+
+            // Fetch Tracks
+        const trackQuery = query(
+          collection(getFirestore(), "tracks"), // Change "tracks" to your actual collection name
           where("userId", "==", currentUser.uid)
         );
-        const querySnapshot = await getDocs(catchQuery);
-        const spots = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-  
-        setFishingSpots(spots);
+        const trackSnapshot = await getDocs(trackQuery);
+        const tracksData = trackSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            trackName: data.trackName,
+            description: data.description,
+            distance: data.distance,
+            duration: data.duration,
+          } as Track;
+        });
+        setTracks(tracksData);
+        }
       }
     }
-    setLoading(false); 
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchUserData();
-    console.log(fishingSpots);
   }, []);
 
   const onRefresh = async () => {
@@ -99,8 +158,27 @@ const Profile = () => {
     setRefreshing(false);
   };
 
+  const handleAddButtonPress = () => {
+    if (user?.isAnonymous) {
+      Alert.alert(
+        "Account Required",
+        "Please create an account with an email to use this feature."
+      );
+    } else {
+      router.push("/navigate-location");
+    }
+  };
+
+  const toggleDropdown = () => {
+    setDropdownVisible(!dropdownVisible);
+  };
+
+  const handleTabSelect = (tab: string) => {
+    setSelectedTab(tab);
+    setDropdownVisible(false);
+  };
+
   if (loading) {
-    // Display the loading spinner
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#0000ff" />
@@ -152,74 +230,43 @@ const Profile = () => {
             />
           </View>
         </View>
+
         <View className="flex flex-row justify-between items-left space-x-2 mt-1">
-          <View className="mt-1 flex-row space-x-1.5">
-            <Text className="text-black text-lg font-psemibold">Catches</Text>
-          </View>
-          <AddButton onPress={() => router.push("/navigate-location")} />
+          <TouchableOpacity
+            onPress={toggleDropdown}
+            className="mt-1 flex-row space-x-1.5"
+          >
+            <Text className="text-black text-lg font-psemibold">
+              {selectedTab}
+            </Text>
+            <Image
+              source={icons.down}
+              className="w-3 h-3 mt-1.5"
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+          <AddButton onPress={handleAddButtonPress} />
         </View>
 
-        {/* FISHING SPOT SECTION  */}
-
-        {fishingSpots.length > 0 ? (
-          fishingSpots.map((spot, index) => (
-            <TouchableOpacity
-              key={index}
-              className="my-1"
-              onPress={() =>
-                router.push({
-                  pathname: "/edit-catches",
-                  params: {
-                    id: spot.id,
-                    latitude: spot.latitude,
-                    longitude: spot.longitude,
-                    description: spot.description,
-                    screenshotURL: spot.screenshotURL,
-                    fishName: spot.fishName,
-                    fishWeight: spot.fishWeight,
-                    fishLength: spot.fishLength,
-                    dayCaught: spot.dayCaught,
-                    timeCaught: spot.timeCaught,
-                  },
-                })
-              }
-            >
-              {spot.screenshotURL && (
-                <Image
-                  source={{ uri: spot.screenshotURL }}
-                  className="w-full h-32 mt-2 rounded-xl relative"
-                  resizeMode="cover"
-                />
-              )}
-              <View className="absolute bg-white bottom-0 right-0 rounded-tl-xl px-3 py-1.5 flex-row justify-center space-x-3">
-                <Text className="text-black text-md font-psemibold">
-                  {spot.description}
-                </Text>
-              </View>
+        {dropdownVisible && (
+          <View className="absolute top-64 left-5 bg-white shadow-lg shadow-black p-2 space-y-1 w-32 rounded-md z-10">
+            <TouchableOpacity onPress={() => handleTabSelect("Catches")}>
+              <Text className="text-black font-pmedium">Catches</Text>
             </TouchableOpacity>
-          ))
+            <TouchableOpacity onPress={() => handleTabSelect("Tracks")}>
+              <Text className="text-black font-pmedium">Tracks</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {selectedTab === "Catches" ? (
+          <FishingSpotList
+            fishingSpots={fishingSpots}
+            handleAddButtonPress={handleAddButtonPress}
+            icons={icons}
+          />
         ) : (
-          <TouchableOpacity
-            className="flex flex-row items-center space-x-3 mt-2"
-            onPress={() => router.push("/navigate-location")}
-          >
-            <View className="w-24 h-24 rounded-md bg-gray-200 flex justify-center items-center">
-              <Image
-                source={icons.fish}
-                className="w-12 h-12"
-                resizeMode="contain"
-              />
-            </View>
-            <View className="flex-1 mb-4">
-              <Text className="text-black text-lg font-psemibold">
-                Start your logbook
-              </Text>
-              <Text className="text-gray-500 text-sm font-pregular leading-4">
-                Track all your catches in one place! Find and relive your
-                fishing memories whenever you'd like.
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <TrackList tracks={tracks} />
         )}
       </ScrollView>
     </SafeAreaView>
