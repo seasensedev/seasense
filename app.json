@@ -8,7 +8,7 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/geomapper-splash.png",
+      "image": "./assets/images/seasense-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
