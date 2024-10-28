@@ -11,12 +11,12 @@ import {
 } from "react-native";
 import MapView, { Polyline } from "react-native-maps";
 import * as Location from "expo-location";
-import Toast from "../../components/Toaster/Toast";
+import Toast from "../../components/Toaster/toast";
+import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
-import { database } from "../../config/firebaseConfig"; // Import your database config
+import { database } from "../../config/firebaseConfig";
 
-
-export const SonarDataMap = () => {
+export const TrackingMap = () => {
   const [location, setLocation] =
     useState<Location.LocationObjectCoords | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export const SonarDataMap = () => {
   };
 
   const mapRef = useRef<MapView>(null);
-  const slideAnim = useRef(new Animated.Value(0)).current; 
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     (async () => {
@@ -62,32 +62,29 @@ export const SonarDataMap = () => {
   useEffect(() => {
     if (isTracking && startTime) {
       const interval = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000)); 
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
       }, 1000);
       return () => clearInterval(interval);
     }
   }, [isTracking, startTime]);
 
   useEffect(() => {
-    // Reference the sensor_data node in Firebase Realtime Database
     const sensorDataRef = ref(database, "sensor_data/");
 
     // Listen for changes to the sensor_data node
     const unsubscribe = onValue(sensorDataRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        
-        // Extract the latest entry (or the one you need)
-        const keys = Object.keys(data); // Get all dynamic keys
-        const latestKey = keys[keys.length - 1]; // Assuming the latest is the last key
 
-        // Access the temperature for the latest key
+        const keys = Object.keys(data);
+        const latestKey = keys[keys.length - 1];
+
         const latestData = data[latestKey];
         if (latestData && latestData.temperature) {
-          setTemperature(latestData.temperature); // Update state with new temperature value
+          setTemperature(latestData.temperature);
         }
       } else {
-        setTemperature(null); // Handle when data doesn't exist
+        setTemperature(null);
       }
     });
 
@@ -129,19 +126,17 @@ export const SonarDataMap = () => {
 
       setWatchPositionSubscription(subscription);
     } else {
-      // Start loading spinner when stopping tracking
       setIsLoading(true);
 
-      // Delay stopping tracking by 300ms
       setTimeout(() => {
         setIsTracking(false);
         if (watchPositionSubscription) {
           watchPositionSubscription.remove();
           setWatchPositionSubscription(null);
         }
-        setIsLoading(false); // Stop loading spinner
+        setIsLoading(false);
         showToast("Tracking Stopped");
-      }, 1200); // Delay for 300ms
+      }, 1200);
     }
   };
 
@@ -166,7 +161,6 @@ export const SonarDataMap = () => {
     }).start(() => setModalVisible(false));
   };
 
-  // Utility function to format the elapsed time in HH:MM:SS
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -216,18 +210,6 @@ export const SonarDataMap = () => {
             km
           </Text>
         </View>
-        
-        <View className="flex flex-col justify-center">
-          <Text className="font-pregular text-md text-center mb-8 uppercase">
-            Temperature
-          </Text>
-          <Text className="font-semibold text-7xl mb-8 text-center">
-            {temperature !== null ? `${temperature}` : "Loading..."}
-          </Text>
-          <Text className="font-pregular text-md text-center uppercase">
-            °C
-          </Text>
-        </View>
       </View>
 
       <TouchableOpacity
@@ -270,15 +252,7 @@ export const SonarDataMap = () => {
 
       <View className="flex flex-row justify-center space-x-2">
         <TouchableOpacity
-          className="bg-[#1e5aa0] rounded-full px-6 py-3 items-center"
-          onPress={openDrawer}
-        >
-          <Text className="font-psemibold text-white text-lg font-bold">
-            Status
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="bg-[#1e5aa0] rounded-full px-6 py-3 items-center "
+          className="bg-[#1e5aa0] rounded-full px-12 py-3 items-center "
           onPress={startTracking}
           disabled={isLoading} // Disable button while loading
         >
@@ -289,6 +263,15 @@ export const SonarDataMap = () => {
               {isTracking ? "Stop Tracking" : "Start Tracking"}
             </Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="bg-[#1e5aa0] rounded-full px-9 py-3 items-center"
+          onPress={openDrawer}
+        >
+          <Text className="font-psemibold text-white text-lg font-bold">
+            Status
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -307,6 +290,8 @@ export const SonarDataMap = () => {
         message={toastMessage}
         onHide={() => setToastVisible(false)}
       />
+
+      <Temperature temperature={temperature} />
     </View>
   );
 };
@@ -317,5 +302,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SonarDataMap;
+export default TrackingMap;
 
