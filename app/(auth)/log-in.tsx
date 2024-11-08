@@ -26,14 +26,14 @@ export default function LogIn() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-[#0e4483] justify-center items-center">
+      <View className="flex-1 bg-primary justify-center items-center">
         <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 p-6 pt-24 bg-[#0e4483]">
+    <View className="flex-1 p-6 pt-24 bg-primary">
       <Text className="text-4xl justify-start text-white font-pbold mb-5">
         Welcome Back!
       </Text>

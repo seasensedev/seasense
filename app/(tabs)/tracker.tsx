@@ -14,7 +14,8 @@ import * as Location from "expo-location";
 import Toast from "../../components/Toaster/toast";
 import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
-import { database } from "../../config/firebaseConfig";
+import { database, db } from "../../config/firebaseConfig";
+import { collection, addDoc } from "firebase/firestore";
 
 export const TrackingMap = () => {
   const [location, setLocation] =
@@ -28,12 +29,25 @@ export const TrackingMap = () => {
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [speed, setSpeed] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [modalVisible, setModalVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-
   const [temperature, setTemperature] = useState<number | null>(null);
+  const [currentCity, setCurrentCity] = useState<string | null>(null);
+  const [hasMovedRecently, setHasMovedRecently] = useState<boolean>(false);
+  const [locationDetails, setLocationDetails] = useState<{
+    street: string | null;
+    district: string | null;
+    city: string | null;
+    region: string | null;
+    country: string | null;
+  }>({
+    street: null,
+    district: null,
+    city: null,
+    region: null,
+    country: null,
+  });
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -50,6 +64,11 @@ export const TrackingMap = () => {
         setErrorMsg("Permission to access location was denied");
         return;
       }
+
+      // Get the initial location
+      const initialLocation = await Location.getCurrentPositionAsync({});
+      setLocation(initialLocation.coords);
+      reverseGeocode(initialLocation.coords);
     })();
 
     return () => {
@@ -67,18 +86,15 @@ export const TrackingMap = () => {
       return () => clearInterval(interval);
     }
   }, [isTracking, startTime]);
+  
 
   useEffect(() => {
     const sensorDataRef = ref(database, "sensor_data/");
-
-    // Listen for changes to the sensor_data node
     const unsubscribe = onValue(sensorDataRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-
         const keys = Object.keys(data);
         const latestKey = keys[keys.length - 1];
-
         const latestData = data[latestKey];
         if (latestData && latestData.temperature) {
           setTemperature(latestData.temperature);
@@ -91,8 +107,60 @@ export const TrackingMap = () => {
     return () => unsubscribe();
   }, []);
 
+  const reverseGeocode = async (coords: Location.LocationObjectCoords) => {
+    const geocoded = await Location.reverseGeocodeAsync(coords);
+    if (geocoded.length > 0) {
+      const location = geocoded[0];
+      setCurrentCity(location.city || location.subregion || "Location");
+      setLocationDetails({
+        street: location.street || null,
+        district: location.district || null,
+        city: location.city || null,
+        region: location.region || null,
+        country: location.country || null,
+      });
+    }
+  };
+
+  const formatDateTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return {
+      date: date.toLocaleDateString(),
+      time: date.toLocaleTimeString(),
+      timestamp: timestamp
+    };
+  };
+
+  const saveTrackingDataToFirestore = async () => {
+    try {
+      const formattedStartTime = startTime ? formatDateTime(startTime) : null;
+      
+      await addDoc(collection(db, "tracking_data"), {
+        routeCoordinates,
+        startTime: formattedStartTime,
+        elapsedTime,
+        speed,
+        timestamp: formatDateTime(Date.now()),
+        location: {
+          coordinates: {
+            latitude: location?.latitude,
+            longitude: location?.longitude,
+          },
+          details: locationDetails,
+          currentCity: currentCity,
+        },
+        temperature: temperature,
+      });
+      console.log("Tracking data saved to Firestore!");
+    } catch (error) {
+      console.error("Error saving tracking data to Firestore: ", error);
+    }
+  };
+
+  
   const startTracking = async () => {
     if (!isTracking) {
+     
       setIsTracking(true);
       setStartTime(Date.now());
       setElapsedTime(0);
@@ -112,6 +180,7 @@ export const TrackingMap = () => {
 
           setSpeed(speed ? parseFloat((speed * 3.6).toFixed(2)) : 0);
 
+          
           mapRef.current?.animateToRegion(
             {
               latitude,
@@ -121,21 +190,52 @@ export const TrackingMap = () => {
             },
             1000
           );
+          
+          setHasMovedRecently(speed !== null && speed > 0); 
+          reverseGeocode(newLocation.coords);
         }
       );
 
       setWatchPositionSubscription(subscription);
     } else {
+      if (!hasMovedRecently) {
+        Alert.alert(
+          "Not moving yet?",
+          "SeaSense needs a longer activity to upload and analyze. Please continue or start over.",
+          [
+            {
+              text: "Discard",
+              onPress: () => {
+                setIsTracking(false);
+                if (watchPositionSubscription) {
+                  watchPositionSubscription.remove();
+                  setWatchPositionSubscription(null);
+                }
+              },
+              style: "cancel",
+            },
+            {
+              text: "Resume",
+              onPress: () => {
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+        return; 
+      }
       setIsLoading(true);
+      setTimeout(async () => {
+      setIsTracking(false);
+      if (watchPositionSubscription) {
+        watchPositionSubscription.remove();
+        setWatchPositionSubscription(null);
+      }
+      setIsLoading(false);
+      showToast("Tracking Stopped");
 
-      setTimeout(() => {
-        setIsTracking(false);
-        if (watchPositionSubscription) {
-          watchPositionSubscription.remove();
-          setWatchPositionSubscription(null);
-        }
-        setIsLoading(false);
-        showToast("Tracking Stopped");
+      await saveTrackingDataToFirestore();
+        
       }, 1200);
     }
   };
@@ -160,6 +260,9 @@ export const TrackingMap = () => {
       useNativeDriver: true,
     }).start(() => setModalVisible(false));
   };
+
+  
+
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -246,7 +349,11 @@ export const TrackingMap = () => {
         </MapView>
       ) : (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#1e5aa0" />
+          <Text className="font-psemibold text-xl text-[#1e5aa0]">
+            {currentCity
+              ? `You are in ${currentCity} right now. Start Tracking!`
+              : "Getting location..."}
+          </Text>
         </View>
       )}
 
@@ -254,9 +361,9 @@ export const TrackingMap = () => {
         <TouchableOpacity
           className="bg-[#1e5aa0] rounded-full px-12 py-3 items-center "
           onPress={startTracking}
-          disabled={isLoading} // Disable button while loading
+          disabled={isLoading} 
         >
-          {isLoading && isTracking ? ( // Show spinner if loading and tracking
+          {isLoading && isTracking ? ( 
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text className="font-psemibold text-white text-lg font-bold">
@@ -303,4 +410,3 @@ const styles = StyleSheet.create({
 });
 
 export default TrackingMap;
-

@@ -44,6 +44,17 @@ export default function LogsLayout() {
           headerTintColor: "black",
         }}
       />
+       <Stack.Screen
+        name="recent-track"
+        options={{
+          title: "Recent Track",
+          headerShown: true,
+          headerTransparent: false,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+        }}
+      />
     </Stack>
+    
   );
 }

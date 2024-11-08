@@ -50,7 +50,7 @@ export default function Settings() {
 
       <View className="mb-5">
         <Text className="text-lg font-psemibold mb-1">Other</Text>
-        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100 rounded-t-lg">
+        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100 rounded-t-lg" onPressIn={() => router.push("/faq")}>
           <AntDesign name="mail" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">Frequently Asked Questions</Text>
         </TouchableOpacity>
@@ -63,7 +63,7 @@ export default function Settings() {
       <View>
         <Text className="text-lg font-psemibold mb-1">App Settings</Text>
 
-        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100 rounded-t-lg">
+        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100 rounded-t-lg" onPressIn={() => router.push("/about")}>
           <AntDesign name="infocirlce" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">About</Text>
         </TouchableOpacity>

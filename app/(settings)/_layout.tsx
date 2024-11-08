@@ -36,6 +36,28 @@ export default function SettingsLayout() {
           
         }}
       />
+       <Stack.Screen
+        name="faq"
+        options={{
+          title: "FAQ",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+          
+        }}
+      />
+      <Stack.Screen
+        name="about"
+        options={{
+          title: "About",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+          
+        }}
+      />
     </Stack>
   );
 }

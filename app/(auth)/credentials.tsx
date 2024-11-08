@@ -55,7 +55,7 @@ function UserCredentials() {
   };
 
   return (
-    <View className="flex-1 pt-16 items-center bg-[#0e4483]">
+    <View className="flex-1 pt-16 items-center bg-primary">
       <FormField
         label="First Name"
         value={firstName}

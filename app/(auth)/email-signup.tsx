@@ -44,7 +44,7 @@ const EmailSignup = () => {
   };
 
   return (
-    <View className="flex-1 pt-16 items-center bg-[#0e4483]">
+    <View className="flex-1 pt-16 items-center bg-primary">
       <View className="mb-4 w-full px-4">
         <Text className="text-lg font-semibold mb-2 text-white">Email</Text>
         <TextInput
