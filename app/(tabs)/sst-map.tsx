@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Alert } from 'react-native';
-import MapView, { Marker, UrlTile, PROVIDER_GOOGLE, Region,MapPressEvent } from 'react-native-maps';
+import MapView, { Marker, UrlTile, PROVIDER_GOOGLE, Region, MapPressEvent } from 'react-native-maps';
 import { db } from '@/config/firebaseConfig';
 import { getDocs, collection, query, where } from 'firebase/firestore';
-
+import { useMapTheme } from '../../context/MapThemeContext';
+import { mapThemes } from '../../constants/mapStyles';
 
 const SSTMap = () => {
   type SSTData = {
@@ -20,6 +21,8 @@ const SSTMap = () => {
     latitudeDelta: 1.21,
     longitudeDelta: 0.90,
   });
+
+  const { currentTheme } = useMapTheme();
 
   const fetchData = async () => {
     try{
@@ -75,6 +78,7 @@ const SSTMap = () => {
         initialRegion={region}
         onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
         onPress={handlePress}
+        customMapStyle={mapThemes[currentTheme]}
       >
         <UrlTile
           urlTemplate="http://192.168.114.49:8080/data/try_6/{z}/{x}/{y}.png" //          urlTemplate="http://192.168.254.104:8080/data/sst_davao_3/{z}/{x}/{y}.png"
