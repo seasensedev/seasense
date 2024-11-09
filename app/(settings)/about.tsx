@@ -11,7 +11,6 @@ const About = () => {
         
       >
       <View className="p-6">
-        {/* App Logo and Name */}
         <View className="items-center my-8">
           <Image
             source={icons.logo2}
@@ -22,7 +21,6 @@ const About = () => {
           <Text className="text-sm font-pregular text-gray-500">Version 1.0.0</Text>
         </View>
 
-        {/* App Description */}
         <View className="mb-8">
           <Text className="text-lg font-pmedium text-primary mb-2">About the App</Text>
           <Text className="text-base font-pregular text-gray-700 leading-6">
@@ -31,7 +29,6 @@ const About = () => {
           </Text>
         </View>
 
-        {/* Features */}
         <View className="mb-8">
           <Text className="text-lg font-pmedium text-primary mb-2">Key Features</Text>
           <View className="space-y-2">
@@ -42,7 +39,6 @@ const About = () => {
           </View>
         </View>
 
-        {/* Developer Info */}
         <View className="mb-8">
           <Text className="text-lg font-pmedium text-primary mb-2">Developed by</Text>
           <Text className="text-base font-pregular text-gray-700">SeaSense Team</Text>

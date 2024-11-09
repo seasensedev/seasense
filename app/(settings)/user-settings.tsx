@@ -60,10 +60,16 @@ export default function Settings() {
         </TouchableOpacity>
       </View>
 
-      <View>
+      <View className="mb-5">
         <Text className="text-lg font-psemibold mb-1">App Settings</Text>
-
-        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100 rounded-t-lg" onPressIn={() => router.push("/about")}>
+        <TouchableOpacity 
+          className="flex-row items-center p-2 bg-gray-100 rounded-t-lg" 
+          onPressIn={() => router.push("/map-themes" as never)}
+        >
+          <AntDesign name="enviromento" size={24} color="#4F8EF7" />
+          <Text className="ml-3 text-base">Map Themes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100" onPressIn={() => router.push("/about")}>
           <AntDesign name="infocirlce" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">About</Text>
         </TouchableOpacity>

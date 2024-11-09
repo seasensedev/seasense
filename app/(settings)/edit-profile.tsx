@@ -45,7 +45,6 @@ export default function EditProfile() {
           setLastName(data.lastName || "");
           setEmail(user.email || "");
 
-          // Optionally, fetch profile picture URL if needed
           const storage = getStorage();
           const profilePicRef = ref(storage, `profile_pictures/${user.uid}`);
           try {
