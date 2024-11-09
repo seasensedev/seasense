@@ -110,7 +110,6 @@ export default function EditProfile() {
             updateData.displayName = `${firstName} ${lastName}`;
           }
           if (selectedImage && selectedImage !== currentPhotoURL) {
-            // Upload profile picture to Firebase Storage
             const response = await fetch(selectedImage);
             const blob = await response.blob();
             const storageRef = ref(storage, `profile_pictures/${user.uid}`);
@@ -119,12 +118,10 @@ export default function EditProfile() {
             updateData.photoURL = photoURL;
           }
 
-          // Update Firebase Auth profile
           if (Object.keys(updateData).length > 0) {
             await updateProfile(user, updateData);
           }
 
-          // Update additional user data in Firestore
           await updateDoc(userDoc, {
             firstName: firstName,
             lastName: lastName,
