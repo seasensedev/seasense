@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from "react";
+import * as Notifications from 'expo-notifications';
+import { doc, getDoc } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import SplashScreen from "../app/splash-screen";
 import { useRouter } from "expo-router";
 import { useAuth } from "../hooks/useAuth";
 import { SafeAreaView, ActivityIndicator } from "react-native";
+
+// Configure notifications
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function Index() {
   const router = useRouter();
@@ -10,12 +22,39 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      router.push("/home");
-    } else {
-      setLoading(false);
-    }
+    const checkUserStatus = async () => {
+      if (user) {
+        const db = getFirestore();
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        
+        if (userData?.hasCompletedOnboarding) {
+          router.push('/home');
+        } else {
+          router.push('/onboarding');
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    registerForPushNotificationsAsync();
+    checkUserStatus();
   }, [user, router]);
+
+  const registerForPushNotificationsAsync = async () => {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    if (finalStatus !== 'granted') {
+      return;
+    }
+  };
 
   if (loading) {
     return (

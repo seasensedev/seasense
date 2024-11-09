@@ -8,12 +8,54 @@ import FormField from "../../components/Forms/FormField";
 import CustomButton from "../../components/Buttons/CustomButton";
 import { useRouter } from "expo-router";
 
-const locations = ["Davao City"];
+type PhilippineLocationsType = {
+  [region: string]: {
+    [province: string]: {
+      [city: string]: string[];
+    };
+  };
+};
+
+const philippineLocations: PhilippineLocationsType = {
+  "Region XI (Davao Region)": {
+    "Davao del Sur": {
+      "Davao City": [
+        "Poblacion District",
+        "Talomo District",
+        "Buhangin District",
+        "Toril District",
+        "Bunawan District",
+      ],
+    },
+    "Davao del Norte": {
+      "Tagum City": [
+        "Poblacion",
+        "Apokon",
+        "Magugpo East",
+        "Magugpo North",
+      ],
+    },
+  },
+  "Region X (Northern Mindanao)": {
+    "Misamis Oriental": {
+      "Cagayan de Oro City": [
+        "Carmen",
+        "Nazareth",
+        "Lumbia",
+        "Macasandig",
+      ],
+    },
+  },
+
+};
 
 function UserCredentials() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [location, setLocation] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedBarangay, setSelectedBarangay] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -28,7 +70,7 @@ function UserCredentials() {
   }, [user]);
 
   const handleSubmit = async () => {
-    if (!firstName || !lastName || !location) {
+    if (!firstName || !lastName || !selectedRegion || !selectedProvince || !selectedCity || !selectedBarangay) {
       setErrorMessage("Please fill in all fields");
       return;
     }
@@ -39,7 +81,12 @@ function UserCredentials() {
         await setDoc(userDocRef, {
           firstName,
           lastName,
-          location,
+          location: {
+            region: selectedRegion,
+            province: selectedProvince,
+            city: selectedCity,
+            barangay: selectedBarangay,
+          },
         });
         setErrorMessage("Profile information saved!");
         router.push("/home");
@@ -72,21 +119,77 @@ function UserCredentials() {
 
       <View className="bg-gray-400 w-5/6 h-[1px] px-4 mb-4"></View>
       <View className="w-full px-4 mb-4">
-        <Text className="text-white text-md font-semibold">
-          Available Locations
-        </Text>
-        <View className="bg-white border rounded mt-2">
+        <Text className="text-white text-md font-semibold">Location</Text>
+        
+        <View className="bg-white border rounded mt-2 mb-2">
           <Picker
-            selectedValue={location}
-            onValueChange={(itemValue) => setLocation(itemValue)}
+            selectedValue={selectedRegion}
+            onValueChange={(itemValue) => {
+              setSelectedRegion(itemValue);
+              setSelectedProvince("");
+              setSelectedCity("");
+              setSelectedBarangay("");
+            }}
             style={{ height: 50, color: "black" }}
           >
-            <Picker.Item label="Select your location" value="" />
-            {locations.map((loc) => (
-              <Picker.Item key={loc} label={loc} value={loc} />
+            <Picker.Item label="Select Region" value="" />
+            {Object.keys(philippineLocations).map((region) => (
+              <Picker.Item key={region} label={region} value={region} />
             ))}
           </Picker>
         </View>
+
+        {selectedRegion && (
+          <View className="bg-white border rounded mt-2 mb-2">
+            <Picker
+              selectedValue={selectedProvince}
+              onValueChange={(itemValue) => {
+                setSelectedProvince(itemValue);
+                setSelectedCity("");
+                setSelectedBarangay("");
+              }}
+              style={{ height: 50, color: "black" }}
+            >
+              <Picker.Item label="Select Province" value="" />
+              {Object.keys(philippineLocations[selectedRegion]).map((province) => (
+                <Picker.Item key={province} label={province} value={province} />
+              ))}
+            </Picker>
+          </View>
+        )}
+
+        {selectedProvince && (
+          <View className="bg-white border rounded mt-2 mb-2">
+            <Picker
+              selectedValue={selectedCity}
+              onValueChange={(itemValue) => {
+                setSelectedCity(itemValue);
+                setSelectedBarangay("");
+              }}
+              style={{ height: 50, color: "black" }}
+            >
+              <Picker.Item label="Select City/Municipality" value="" />
+              {Object.keys(philippineLocations[selectedRegion][selectedProvince]).map((city) => (
+                <Picker.Item key={city} label={city} value={city} />
+              ))}
+            </Picker>
+          </View>
+        )}
+
+        {selectedCity && (
+          <View className="bg-white border rounded mt-2 mb-2">
+            <Picker
+              selectedValue={selectedBarangay}
+              onValueChange={setSelectedBarangay}
+              style={{ height: 50, color: "black" }}
+            >
+              <Picker.Item label="Select Barangay" value="" />
+              {philippineLocations[selectedRegion][selectedProvince][selectedCity].map((barangay) => (
+                <Picker.Item key={barangay} label={barangay} value={barangay} />
+              ))}
+            </Picker>
+          </View>
+        )}
       </View>
 
       {loading ? (
