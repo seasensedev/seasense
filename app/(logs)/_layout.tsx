@@ -17,7 +17,7 @@ export default function LogsLayout() {
       <Stack.Screen
         name="edit-location"
         options={{
-          title: "Navigate Location",
+          title: "Update Location",
           headerShown: true,
           headerTransparent: true,
           headerTitleStyle: { color: "black" },
