@@ -30,7 +30,17 @@ import { useFocusEffect } from "@react-navigation/native";
 
 const CatchDetails = () => {
   const router = useRouter();
-  const { latitude, longitude, description } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const { latitude, longitude, description, documentId } = params;
+
+  // Convert documentId to string and validate
+  const docId = Array.isArray(documentId) ? documentId[0] : documentId;
+
+  // Validate required params
+  if (!docId) {
+    console.error("Document ID is undefined");
+    return null;
+  }
 
   // Convert latitude and longitude to numbers
   const lat = parseFloat(latitude as string);
@@ -64,18 +74,11 @@ const CatchDetails = () => {
     setTimeCaught(currentTime);
   };
 
-  const { documentId } = useLocalSearchParams() as { documentId: string };
-
-  if (!documentId) {
-    console.error("Document ID is undefined");
-    return;
-  }
-
   // Function to save catch details
   const handleSaveCatchDetails = async () => {
     const db = getFirestore();
     const auth = getAuth();
-    const docRef = doc(db, "log_catch", documentId);
+    const docRef = doc(db, "log_catch", docId);
 
     setLoading(true);
     try {
@@ -117,7 +120,7 @@ const CatchDetails = () => {
   // Function to handle document deletion
   const handleDeleteDocument = async () => {
     const db = getFirestore();
-    const docRef = doc(db, "log_catch", documentId);
+    const docRef = doc(db, "log_catch", docId);
 
     setLoading(true);
     try {
