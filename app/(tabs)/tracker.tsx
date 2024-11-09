@@ -16,6 +16,8 @@ import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
 import { database, db } from "../../config/firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
+import { useMapTheme } from '../../context/MapThemeContext';
+import { mapThemes } from '../../constants/mapStyles';
 
 export const TrackingMap = () => {
   const [location, setLocation] =
@@ -56,6 +58,7 @@ export const TrackingMap = () => {
 
   const mapRef = useRef<MapView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const { currentTheme } = useMapTheme();
 
   useEffect(() => {
     (async () => {
@@ -331,6 +334,7 @@ export const TrackingMap = () => {
           ref={mapRef}
           style={styles.map}
           mapType="standard"
+          customMapStyle={mapThemes[currentTheme]} // Change this line
           initialRegion={{
             latitude: location.latitude,
             longitude: location.longitude,
