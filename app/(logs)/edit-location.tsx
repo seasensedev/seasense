@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import EditLocationForm from "../../components/Forms/EditLocationForm";
 import { captureRef } from "react-native-view-shot";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestore, doc, setDoc, collection } from "firebase/firestore";
@@ -19,8 +18,7 @@ import { getAuth } from "firebase/auth";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
 const EditLocation = () => {
-  const { describeLocation: initialDescribeLocation, latitude: initialLatitude, longitude: initialLongitude } = useLocalSearchParams();
-  const [describeLocation, setDescribeLocation] = useState<string>(Array.isArray(initialDescribeLocation) ? initialDescribeLocation.join("") : initialDescribeLocation || "");
+  const { latitude: initialLatitude, longitude: initialLongitude, id } = useLocalSearchParams();
   const [region, setRegion] = useState({
     latitude: parseFloat(Array.isArray(initialLatitude) ? initialLatitude[0] : initialLatitude || "7.0732"),
     longitude: parseFloat(initialLongitude as string || "125.6104"),
@@ -145,11 +143,6 @@ const EditLocation = () => {
   };
 
   const saveLocation = async () => {
-    if (!describeLocation.trim()) {
-      Alert.alert("Error", "Please enter a description for the fishing spot.");
-      return;
-    }
-  
     setLoading(true);
   
     try {
@@ -165,34 +158,21 @@ const EditLocation = () => {
         await uploadBytes(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
   
-        const newDocRef = doc(collection(db, "log_catch"));
-        await setDoc(newDocRef, {
+        const docRef = id ? doc(db, "log_catch", id.toString()) : doc(collection(db, "log_catch"));
+        
+        await setDoc(docRef, {
           userId: auth.currentUser?.uid,
           latitude: region.latitude.toString(),
           longitude: region.longitude.toString(),
-          description: describeLocation,
           screenshotURL: downloadURL,
-          fishName: "",
-          fishWeight: "",
-          fishLength: "",
-          dayCaught: "",
-          timeCaught: "",
-        });
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
   
-        // Navigate back with updated parameters
-        router.push({
-          pathname: "/edit-catches",
-          params: {
-            id: newDocRef.id,
-            latitude: region.latitude.toString(),
-            longitude: region.longitude.toString(),
-            description: describeLocation,
-          }
-        });
+        router.back();
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to save location and upload screenshot.");
+      Alert.alert("Error", "Failed to update location.");
     } finally {
       setLoading(false);
     }
@@ -215,7 +195,8 @@ const EditLocation = () => {
       <View style={styles.container} className="mt-2">
         <MapView
           style={styles.map}
-          mapType="hybrid"
+          mapType="standard"
+          customMapStyle={customMapStyle}
           region={region}
           onRegionChange={handleRegionChange}
           onRegionChangeComplete={handleRegionChangeComplete}
@@ -256,52 +237,199 @@ const EditLocation = () => {
         </View>
       </View>
       <View className="mt-2">
-        <TouchableOpacity
-          className="mx-10 my-5 bg-[#0066CC] px-3 py-3 rounded-lg"
-          onPress={saveLocation}
-        >
-          <Text className="text-center text-white text-lg font-semibold">
-            {loading ? <ActivityIndicator color="white" /> : "Save Location"}
-          </Text>
+        <TouchableOpacity className="mx-2 space-y-2">
+          {loading ? (
+            <ActivityIndicator size="large" color="#1e5aa0" />
+          ) : (
+            <TouchableOpacity
+              className="bg-[#1e5aa0] rounded-full py-3 items-center mb-2"
+              onPress={saveLocation}
+            >
+              <View className="flex-row items-center space-x-3">
+                <Text className="text-white text-lg font-semibold">
+                  Update Location
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
-        <EditLocationForm
-          onDescribeLocationChange={setDescribeLocation}
-          describeLocation={describeLocation}
-        />
       </View>
     </SafeAreaView>
   );
 };
 
+// Update styles to match navigate-location.tsx
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
+    height: "60%",
+    width: "100%",
   },
   map: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   markerFixed: {
     position: "absolute",
-    alignSelf: "center",
-    justifyContent: "center",
-    alignItems: "center",
+    left: "50%",
     top: "50%",
+    marginLeft: -3,
+    marginTop: -5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  marker: {
+    height: 5,
+    width: 5,
+    borderRadius: 7,
+    backgroundColor: "white",
+    borderColor: "white",
+    borderWidth: 2,
   },
   pulse: {
     position: "absolute",
-    backgroundColor: "rgba(0, 150, 255, 0.3)",
-    borderRadius: 50,
-    width: 20,
-    height: 20,
-  },
-  marker: {
-    position: "absolute",
-    backgroundColor: "rgba(0, 150, 255, 0.7)",
-    borderRadius: 50,
-    width: 10,
-    height: 10,
+    height: 124,
+    width: 124,
+    borderRadius: 70,
+    borderWidth: 1,
+    borderColor: "#e1e1e1",
   },
 });
 
 export default EditLocation;
+
+const customMapStyle = [
+  {
+    featureType: "all",
+    elementType: "geometry",
+    stylers: [
+      {
+        color: "#202c3e",
+      },
+    ],
+  },
+  {
+    featureType: "all",
+    elementType: "labels.text.fill",
+    stylers: [
+      {
+        gamma: 0.01,
+      },
+      {
+        lightness: 20,
+      },
+      {
+        weight: "1.39",
+      },
+      {
+        color: "#ffffff",
+      },
+    ],
+  },
+  {
+    featureType: "all",
+    elementType: "labels.text.stroke",
+    stylers: [
+      {
+        weight: "0.96",
+      },
+      {
+        saturation: "9",
+      },
+      {
+        visibility: "on",
+      },
+      {
+        color: "#000000",
+      },
+    ],
+  },
+  {
+    featureType: "all",
+    elementType: "labels.icon",
+    stylers: [
+      {
+        visibility: "off",
+      },
+    ],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [
+      {
+        lightness: 30,
+      },
+      {
+        saturation: "9",
+      },
+      {
+        color: "#29446b",
+      },
+    ],
+  },
+  {
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [
+      {
+        saturation: 20,
+      },
+    ],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [
+      {
+        lightness: 20,
+      },
+      {
+        saturation: -20,
+      },
+    ],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [
+      {
+        lightness: 10,
+      },
+      {
+        saturation: -30,
+      },
+    ],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.fill",
+    stylers: [
+      {
+        color: "#193a55",
+      },
+    ],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [
+      {
+        saturation: 25,
+      },
+      {
+        lightness: 25,
+      },
+      {
+        weight: "0.01",
+      },
+    ],
+  },
+  {
+    featureType: "water",
+    elementType: "all",
+    stylers: [
+      {
+        lightness: -20,
+      },
+    ],
+  },
+];
