@@ -1,6 +1,8 @@
 import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
+import NetInfo from '@react-native-community/netinfo';
+import { Alert } from 'react-native';
 
 export default function RootLayout() {
   const [fontsLoaded, error] = useFonts({
@@ -16,8 +18,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    // Font loading effect
     if (error) throw error;
     if (fontsLoaded) SplashScreen.hideAsync();
+
+    // Internet connection monitoring
+    const unsubscribe = NetInfo.addEventListener(state => {
+      if (!state.isConnected) {
+        Alert.alert(
+          "No Internet Connection",
+          "This app requires an internet connection to function properly.",
+          [{ text: "OK" }]
+        );
+      }
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
   }, [fontsLoaded, error]);
 
   if (!fontsLoaded && !error) return null;
