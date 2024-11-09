@@ -270,7 +270,7 @@ const NavigateLocation = () => {
             <ActivityIndicator size="large" color="#1e5aa0" />
           ) : (
             <TouchableOpacity
-              className="bg-[#1e5aa0] rounded-full py-3 items-center mb-2"
+              className="bg-secondary rounded-full py-3 items-center mb-2"
               onPress={saveLocation}
             >
               <View className="flex-row items-center space-x-3">
