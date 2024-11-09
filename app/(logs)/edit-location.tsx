@@ -16,6 +16,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestore, doc, setDoc, collection } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useMapTheme } from '../../context/MapThemeContext';
+import { mapThemes } from '../../constants/mapStyles';
 
 const EditLocation = () => {
   const { latitude: initialLatitude, longitude: initialLongitude, id } = useLocalSearchParams();
@@ -41,6 +43,7 @@ const EditLocation = () => {
   const [loading, setLoading] = useState(false);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
+  const { currentTheme } = useMapTheme();
 
   // Firebase references
   const storage = getStorage();
@@ -196,12 +199,12 @@ const EditLocation = () => {
         <MapView
           style={styles.map}
           mapType="standard"
-          customMapStyle={customMapStyle}
           region={region}
           onRegionChange={handleRegionChange}
           onRegionChangeComplete={handleRegionChangeComplete}
           onPress={handleMapPress}
           ref={mapRef}
+          customMapStyle={mapThemes[currentTheme]}
         >
           <Marker
             coordinate={currentLocation}

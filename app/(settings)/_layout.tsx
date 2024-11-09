@@ -58,6 +58,17 @@ export default function SettingsLayout() {
           
         }}
       />
+      <Stack.Screen
+        name="map-themes"
+        options={{
+          title: "Map Themes",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+          
+        }}
+      />
     </Stack>
   );
 }

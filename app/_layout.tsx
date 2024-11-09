@@ -3,6 +3,7 @@ import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import NetInfo from '@react-native-community/netinfo';
 import { Alert } from 'react-native';
+import { MapThemeProvider } from '../context/MapThemeContext';
 
 export default function RootLayout() {
   const [fontsLoaded, error] = useFonts({
@@ -40,9 +41,11 @@ export default function RootLayout() {
   if (!fontsLoaded && !error) return null;
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="index" />
-    </Stack>
+    <MapThemeProvider>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+      </Stack>
+    </MapThemeProvider>
   );
 }

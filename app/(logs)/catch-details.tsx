@@ -27,6 +27,8 @@ import {
 import { getAuth } from "firebase/auth";
 import icons from "../../constants/icons";
 import { useFocusEffect } from "@react-navigation/native";
+import { useMapTheme } from '../../context/MapThemeContext';
+import { mapThemes } from '../../constants/mapStyles';
 
 const CatchDetails = () => {
   const router = useRouter();
@@ -60,6 +62,8 @@ const CatchDetails = () => {
 
   // State for loading spinner
   const [loading, setLoading] = useState(false);
+
+  const { currentTheme } = useMapTheme();
 
   // Handle date and time changes
   const onChangeDate = (event: any, selectedDate: Date | undefined) => {
@@ -173,7 +177,7 @@ const CatchDetails = () => {
         <View className="h-[200px] overflow-hidden">
           <MapView
             style={styles.map}
-            mapType="hybrid"
+            mapType="standard"
             initialRegion={{
               latitude: lat,
               longitude: lon,
@@ -183,6 +187,7 @@ const CatchDetails = () => {
             zoomEnabled={false}
             scrollEnabled={false}
             onPress={handleMapPress}
+            customMapStyle={mapThemes[currentTheme]}
           >
             <Marker
               coordinate={{ latitude: lat, longitude: lon }}
@@ -235,38 +240,42 @@ const CatchDetails = () => {
                 />
               </View>
               <View className="flex-row justify-center space-x-3 mt-5">
-                <TextInput
-                  placeholder="Fish Weight"
-                  placeholderTextColor="#262626"
-                  className={`text-black font-pmedium text-md px-6 py-4 border rounded-md ${
-                    focusedInput === "weight"
-                      ? "border-blue-800"
-                      : "border-gray-300"
-                  }`}
-                  style={styles.input}
-                  onChangeText={setFishWeight}
-                  onFocus={() => setFocusedInput("weight")}
-                  onBlur={() => setFocusedInput(null)}
-                  multiline={false}
-                  numberOfLines={1}
-                  keyboardType="numeric"
-                />
-                <TextInput
-                  placeholder="Fish Length"
-                  placeholderTextColor="#262626"
-                  className={`text-black font-pmedium text-md px-6 py-4 border rounded-md ${
-                    focusedInput === "length"
-                      ? "border-blue-800"
-                      : "border-gray-300"
-                  }`}
-                  style={styles.input}
-                  onChangeText={setFishLength}
-                  onFocus={() => setFocusedInput("length")}
-                  onBlur={() => setFocusedInput(null)}
-                  multiline={false}
-                  numberOfLines={1}
-                  keyboardType="numeric" 
-                />
+                <View style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}>
+                  <TextInput
+                    placeholder="Fish Weight"
+                    placeholderTextColor="#262626"
+                    className={`text-black font-pmedium text-md px-6 py-4 border rounded-md flex-1 ${
+                      focusedInput === "weight"
+                        ? "border-blue-800"
+                        : "border-gray-300"
+                    }`}
+                    onChangeText={setFishWeight}
+                    onFocus={() => setFocusedInput("weight")}
+                    onBlur={() => setFocusedInput(null)}
+                    multiline={false}
+                    numberOfLines={1}
+                    keyboardType="numeric"
+                  />
+                  <Text className="absolute right-3 text-gray-500">lb</Text>
+                </View>
+                <View style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}>
+                  <TextInput
+                    placeholder="Fish Length"
+                    placeholderTextColor="#262626"
+                    className={`text-black font-pmedium text-md px-6 py-4 border rounded-md flex-1 ${
+                      focusedInput === "length"
+                        ? "border-blue-800"
+                        : "border-gray-300"
+                    }`}
+                    onChangeText={setFishLength}
+                    onFocus={() => setFocusedInput("length")}
+                    onBlur={() => setFocusedInput(null)}
+                    multiline={false}
+                    numberOfLines={1}
+                    keyboardType="numeric"
+                  />
+                  <Text className="absolute right-3 text-gray-500">in</Text>
+                </View>
               </View>
 
               <View className="flex-row justify-center space-x-3">

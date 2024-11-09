@@ -1,10 +1,12 @@
 // recent-track.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, SafeAreaView, ScrollView } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
+import { useMapTheme } from '../../context/MapThemeContext';
+import { mapThemes } from '../../constants/mapStyles';
 
 const RecentTrack = () => {
   const params = useLocalSearchParams();
@@ -39,6 +41,7 @@ const RecentTrack = () => {
   }
 
   const [trackData, setTrackData] = useState<TrackData | null>(null);
+  const { currentTheme } = useMapTheme();
 
   useEffect(() => {
     const fetchTrackDetails = async () => {
@@ -67,27 +70,72 @@ const RecentTrack = () => {
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Calculate the center point and bounds of the route
+  const getCenterAndDeltas = (coordinates: Array<{latitude: number; longitude: number}>) => {
+    if (!coordinates || coordinates.length === 0) {
+      return {
+        latitude: trackData?.location.coordinates.latitude || 0,
+        longitude: trackData?.location.coordinates.longitude || 0,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    }
+
+    let minLat = coordinates[0].latitude;
+    let maxLat = coordinates[0].latitude;
+    let minLng = coordinates[0].longitude;
+    let maxLng = coordinates[0].longitude;
+
+    coordinates.forEach(coord => {
+      minLat = Math.min(minLat, coord.latitude);
+      maxLat = Math.max(maxLat, coord.latitude);
+      minLng = Math.min(minLng, coord.longitude);
+      maxLng = Math.max(maxLng, coord.longitude);
+    });
+
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    const latDelta = (maxLat - minLat) * 1.5; 
+    const lngDelta = (maxLng - minLat) * 1.5; 
+
+    return {
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: Math.max(latDelta, 0.01),
+      longitudeDelta: Math.max(lngDelta, 0.01),
+    };
+  };
+
   return (
     <SafeAreaView className="flex-1">
       <ScrollView className="flex-1">
-        <MapView
-          className="w-full h-64"
-          initialRegion={{
-            latitude: trackData.location.coordinates.latitude,
-            longitude: trackData.location.coordinates.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-        >
-          <Marker
-            coordinate={{
-              latitude: trackData.location.coordinates.latitude,
-              longitude: trackData.location.coordinates.longitude,
-            }}
-            title={trackData.location.details.street}
-            description={trackData.location.currentCity}
-          />
-        </MapView>
+        <View className="w-full h-[300px]"> 
+          <MapView
+            className="w-full h-full"
+            initialRegion={getCenterAndDeltas(trackData.routeCoordinates)}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            customMapStyle={mapThemes[currentTheme]} 
+          >
+            <Marker
+              coordinate={{
+                latitude: trackData.location.coordinates.latitude,
+                longitude: trackData.location.coordinates.longitude,
+              }}
+            >
+              <View>
+                <Text>{trackData.location.details.street}</Text>
+              </View>
+            </Marker>
+            <Polyline
+              coordinates={trackData.routeCoordinates}
+              strokeColor="#1e5aa0"
+              strokeWidth={3}
+            />
+          </MapView>
+        </View>
 
         <View className="p-4">
           <Text className="text-xl font-bold mb-4">Track Details</Text>

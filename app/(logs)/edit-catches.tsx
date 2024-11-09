@@ -20,6 +20,8 @@ import { getStorage, ref, deleteObject } from "firebase/storage";
 import { setDoc, getDoc } from "firebase/firestore";
 
 import icons from "../../constants/icons";
+import { useMapTheme } from '../../context/MapThemeContext';
+import { mapThemes } from '../../constants/mapStyles';
 
 const EditCatches = () => {
   const router = useRouter();
@@ -129,6 +131,8 @@ const EditCatches = () => {
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const { currentTheme } = useMapTheme();
+
   const handleMapPress = () => {
     router.push({
       pathname: "/edit-location",
@@ -232,7 +236,7 @@ const EditCatches = () => {
         <View className="h-[200px] overflow-hidden">
           <MapView
             style={styles.map}
-            mapType="hybrid"
+            mapType="standard"
             initialRegion={{
               latitude: lat,
               longitude: lon,
@@ -242,6 +246,7 @@ const EditCatches = () => {
             zoomEnabled={false}
             scrollEnabled={false}
             onPress={handleMapPress}
+            customMapStyle={mapThemes[currentTheme]} // Add this line
           >
             <Marker
               coordinate={{ latitude: region.latitude, longitude: region.longitude }}
@@ -295,38 +300,42 @@ const EditCatches = () => {
               </View>
 
               <View className="flex-row justify-center space-x-3 mt-5">
-                <TextInput
-                  value={fishWeightText}
-                  onChangeText={setFishWeightText}
-                  placeholder="Fish Weight"
-                  placeholderTextColor="#262626"
-                  className={`text-black font-pmedium text-md px-6 py-4 border rounded-md ${
-                    focusedInput === "weight"
-                      ? "border-blue-800"
-                      : "border-gray-300"
-                  }`}
-                  style={styles.input}
-                  onFocus={() => setFocusedInput("weight")}
-                  onBlur={() => setFocusedInput(null)}
-                  multiline={false}
-                  numberOfLines={1}
-                />
-                <TextInput
-                  value={fishLengthText}
-                  onChangeText={setFishLengthText}
-                  placeholder="Fish Length"
-                  placeholderTextColor="#262626"
-                  className={`text-black font-pmedium text-md px-6 py-4 border rounded-md ${
-                    focusedInput === "length"
-                      ? "border-blue-800"
-                      : "border-gray-300"
-                  }`}
-                  style={styles.input}
-                  onFocus={() => setFocusedInput("length")}
-                  onBlur={() => setFocusedInput(null)}
-                  multiline={false}
-                  numberOfLines={1}
-                />
+                <View style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}>
+                  <TextInput
+                    value={fishWeightText}
+                    onChangeText={setFishWeightText}
+                    placeholder="Fish Weight"
+                    placeholderTextColor="#262626"
+                    className={`text-black font-pmedium text-md px-6 py-4 border rounded-md flex-1 ${
+                      focusedInput === "weight"
+                        ? "border-blue-800"
+                        : "border-gray-300"
+                    }`}
+                    onFocus={() => setFocusedInput("weight")}
+                    onBlur={() => setFocusedInput(null)}
+                    multiline={false}
+                    numberOfLines={1}
+                  />
+                  <Text className="absolute right-3 text-gray-500">lb</Text>
+                </View>
+                <View style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}>
+                  <TextInput
+                    value={fishLengthText}
+                    onChangeText={setFishLengthText}
+                    placeholder="Fish Length"
+                    placeholderTextColor="#262626"
+                    className={`text-black font-pmedium text-md px-6 py-4 border rounded-md flex-1 ${
+                      focusedInput === "length"
+                        ? "border-blue-800"
+                        : "border-gray-300"
+                    }`}
+                    onFocus={() => setFocusedInput("length")}
+                    onBlur={() => setFocusedInput(null)}
+                    multiline={false}
+                    numberOfLines={1}
+                  />
+                  <Text className="absolute right-3 text-gray-500">in</Text>
+                </View>
               </View>
 
               <View className="flex-row justify-center space-x-3">
