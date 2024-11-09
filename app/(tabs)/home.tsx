@@ -9,6 +9,7 @@ import HourlyWavePeriod from "../../components/HourlyWavePeriod";
 import icons from "../../constants/icons";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import Skeleton from "../../components/Skeleton";
 
 const Home = () => {
   const [hourlyWaveHeights, setHourlyWaveHeights] = useState<number[]>([]);
@@ -242,9 +243,49 @@ const Home = () => {
   const nextHours = getNextHours();
 
   const calculateRotation = (direction: number) => {
-    // Rotation angle calculation based on wind direction
-    // 0° is North, 90° is East, 180° is South, 270° is West
+
     return direction - 180;
+  };
+
+  const WeatherCardSkeleton: React.FC = () => {
+    return (
+      <View className="flex flex-row justify-between">
+        <View className="flex-col justify-between">
+          <Skeleton width={120} height={24} style={{ marginBottom: 8 }} />
+          <Skeleton width={80} height={48} style={{ marginBottom: 8 }} />
+          <Skeleton width={40} height={24} style={{ marginBottom: 8 }} />
+          <Skeleton width={100} height={20} />
+        </View>
+        <View className="flex-row justify-between mt-2 space-x-3">
+          {[1, 2, 3, 4].map((_, index) => (
+            <View key={index} className="items-center">
+              <Skeleton width={30} height={20} style={{ marginBottom: 20 }} />
+              <Skeleton width={28} height={28} />
+              <Skeleton width={30} height={20} style={{ marginTop: 20 }} />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const WindCardSkeleton: React.FC = () => {
+    return (
+      <View className="flex-row items-center justify-between">
+        <View className="ml-2 mr-3">
+          <Skeleton width={48} height={48} />
+        </View>
+        <View className="flex-row mx-2">
+          {[1, 2, 3, 4].map((_, index) => (
+            <View key={index} className="flex-col items-center mx-4">
+              <Skeleton width={24} height={24} />
+              <Skeleton width={30} height={20} style={{ marginTop: 8 }} />
+              <Skeleton width={30} height={20} style={{ marginTop: 8 }} />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -283,6 +324,7 @@ const Home = () => {
             locations={[0, 1]}
             style={{ borderRadius: 10, padding: 16, marginTop: 24 }}
           >
+            {loading ? <WeatherCardSkeleton /> : (
             <View className="flex flex-row justify-between">
               <View className="flex-col justify-between">
                 <Text className="text-white text-lg mb-2 font-medium">
@@ -324,6 +366,7 @@ const Home = () => {
                 ))}
               </View>
             </View>
+            )}
           </LinearGradient>
 
           {/* Wind Speed */}
@@ -342,6 +385,7 @@ const Home = () => {
             }}
           >
             <View className="flex justify-between">
+              {loading ? <WindCardSkeleton /> : (
               <View className="flex-row items-center justify-between">
                 <View className="ml-2 mr-3">
                   <Image
@@ -382,6 +426,7 @@ const Home = () => {
                 ))}
                 </View>
               </View>
+              )}
             </View>
           </LinearGradient>
 
@@ -391,7 +436,7 @@ const Home = () => {
               Wave Heights
             </Text>
             {loading ? (
-              <Text>Loading...</Text>
+              <Skeleton width="100%" height={200} style={{ marginTop: 8 }} />
             ) : (
               <HourlyWaveHeight
                 hourlyWaveHeights={hourlyWaveHeights.slice(0, 6)}
@@ -406,7 +451,7 @@ const Home = () => {
               Wave Directions
             </Text>
             {loading ? (
-              <Text>Loading...</Text>
+              <Skeleton width="100%" height={200} style={{ marginTop: 8 }} />
             ) : (
               <HourlyWaveDirection
                 hourlyWaveDirections={hourlyWaveDirections.slice(0, 6)}
@@ -421,7 +466,7 @@ const Home = () => {
               Wave Periods
             </Text>
             {loading ? (
-              <Text>Loading...</Text>
+              <Skeleton width="100%" height={200} style={{ marginTop: 8 }} />
             ) : (
               <HourlyWavePeriod
                 hourlyWavePeriods={hourlyWavePeriods.slice(0, 6)}
