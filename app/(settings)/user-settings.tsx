@@ -69,10 +69,21 @@ export default function Settings() {
           <AntDesign name="enviromento" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">Map Themes</Text>
         </TouchableOpacity>
+        
+        {/* Add this new TouchableOpacity for notifications */}
+        <TouchableOpacity 
+          className="flex-row items-center p-2 bg-gray-100" 
+          onPressIn={() => router.push("/notifications" as never)}
+        >
+          <AntDesign name="bells" size={24} color="#4F8EF7" />
+          <Text className="ml-3 text-base">Notifications</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity className="flex-row items-center p-2 bg-gray-100" onPressIn={() => router.push("/about")}>
           <AntDesign name="infocirlce" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">About</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity 
           className="flex-row items-center p-2 bg-gray-100 rounded-b-lg" 
           onPress={handleSignOut} 

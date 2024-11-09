@@ -74,7 +74,7 @@ const SSTMap = () => {
       <MapView
         mapType='hybrid'
         style={styles.map}
-        provider={PROVIDER_GOOGLE} // Use Google Maps for better performance (optional)
+        provider={PROVIDER_GOOGLE}
         initialRegion={region}
         onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
         onPress={handlePress}

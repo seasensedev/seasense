@@ -69,6 +69,17 @@ export default function SettingsLayout() {
           
         }}
       />
+       <Stack.Screen
+        name="notifications"
+        options={{
+          title: "Notifications",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+          
+        }}
+      />
     </Stack>
   );
 }

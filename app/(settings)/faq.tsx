@@ -35,7 +35,7 @@ export default function FAQ() {
               onPress={() => toggleAccordion(index)}
               className="bg-gray-100 p-4 rounded-lg mb-2 shadow flex-row justify-between items-center"
             >
-              <Text className="text-lg font-pmedium flex-1">{item.question}</Text>
+              <Text className="text-lg font-medium flex-1">{item.question}</Text>
               <Image
                 source={icons.down}
                 className="w-4 h-4"
@@ -48,7 +48,7 @@ export default function FAQ() {
 
             <Collapsible collapsed={activeIndex !== index}>
               <View className="bg-gray-200 p-4 rounded-lg mb-4">
-                <Text className="text-base font-pregular text-gray-700">{item.answer}</Text>
+                <Text className="text-base font-regular text-gray-700">{item.answer}</Text>
               </View>
             </Collapsible>
           </View>

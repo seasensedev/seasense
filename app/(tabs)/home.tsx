@@ -10,6 +10,10 @@ import icons from "../../constants/icons";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import Skeleton from "../../components/Skeleton";
+import * as Notifications from 'expo-notifications';
+
+const WAVE_HEIGHT_THRESHOLD = 2; // meters
+const WAVE_PERIOD_THRESHOLD = 10; // seconds
 
 const Home = () => {
   const [hourlyWaveHeights, setHourlyWaveHeights] = useState<number[]>([]);
@@ -29,6 +33,7 @@ const Home = () => {
   const [locationAddress, setLocationAddress] = useState<string>("Loading...");
   const [location, setLocation] = useState<LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
 
   const auth = getAuth();
   const db = getFirestore();
@@ -107,7 +112,7 @@ const Home = () => {
         weatherData.daily.wind_direction_10m_dominant || [];
 
         
-       setTemperature(temperature_2m);
+      setTemperature(temperature_2m);
       setWindSpeed(wind_speed_10m);
       setWindDirection(wind_direction_10m);
       setWeatherCodes(dailyWeatherCodes);
@@ -121,6 +126,9 @@ const Home = () => {
 
       setLoading(false);
       setRefreshing(false);
+      
+      // Check weather conditions after data is loaded
+      checkWeatherConditions();
     } catch (error) {
       setLoading(false);
       setRefreshing(false);
@@ -128,10 +136,119 @@ const Home = () => {
     }
   };
 
+  const requestNotificationPermissions = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    setNotificationPermission(status === 'granted');
+    return status === 'granted';
+  };
+
+  const scheduleWaveNotification = async (
+    height: number,
+    direction: number,
+    period: number
+  ) => {
+    if (!notificationPermission) return;
+  
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Wave Conditions Update',
+          body: `Wave Height: ${height.toFixed(1)}m\nDirection: ${direction}°\nPeriod: ${period}s`,
+          data: { type: 'wave' },
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.error('Error scheduling wave notification:', error);
+    }
+  };
+
+  const scheduleWeatherNotification = async (weatherDescription: string, temperature: number | null) => {
+    if (!notificationPermission) return;
+  
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Weather Alert',
+          body: `Weather has changed to ${weatherDescription}\nTemperature: ${temperature}°C`,
+          data: { type: 'weather' },
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.error('Error scheduling weather notification:', error);
+    }
+  };
+
+  const checkWeatherConditions = () => {
+    if (!loading && weatherCodes[0] !== undefined && temperature !== null) {
+      const description = getWeatherDescription(weatherCodes[0]);
+      
+      // Check for severe weather conditions
+      if (
+        weatherCodes[0] >= 95 || // Thunderstorm
+        weatherCodes[0] >= 65 || // Heavy rain
+        temperature >= 35 || // Very hot
+        temperature <= 10 // Very cold
+      ) {
+        scheduleWeatherNotification(description, temperature);
+      }
+  
+      // Check wave conditions
+      if (hourlyWaveHeights.length > 0) {
+        const currentWaveHeight = hourlyWaveHeights[0];
+        const currentWaveDirection = hourlyWaveDirections[0];
+        const currentWavePeriod = hourlyWavePeriods[0];
+  
+        if (
+          currentWaveHeight >= WAVE_HEIGHT_THRESHOLD ||
+          currentWavePeriod >= WAVE_PERIOD_THRESHOLD
+        ) {
+          scheduleWaveNotification(
+            currentWaveHeight,
+            currentWaveDirection,
+            currentWavePeriod
+          );
+        }
+      }
+    }
+  };
+
   useEffect(() => {
-    getUserData();
-    getWeatherData();
+    let isMounted = true;
+  
+    const setup = async () => {
+      if (isMounted) {
+        await requestNotificationPermissions();
+        await getUserData();
+        await getWeatherData();
+      }
+    };
+  
+    setup();
+  
+    // Configure notification handler
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+    });
+  
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+  
+    if (isMounted) {
+      checkWeatherConditions();
+    }
+  
+    return () => {
+      isMounted = false;
+    };
+  }, [weatherCodes, temperature, hourlyWaveHeights, hourlyWaveDirections, hourlyWavePeriods, loading]);
 
   const onRefresh = () => {
     setRefreshing(true);
