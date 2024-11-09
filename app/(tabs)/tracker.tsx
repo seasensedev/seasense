@@ -14,7 +14,7 @@ import * as Location from "expo-location";
 import Toast from "../../components/Toaster/toast";
 import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
-import { database, db } from "../../config/firebaseConfig";
+import { database, db, auth } from "../../config/firebaseConfig"; // Add auth import
 import { collection, addDoc } from "firebase/firestore";
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
@@ -136,9 +136,15 @@ export const TrackingMap = () => {
 
   const saveTrackingDataToFirestore = async () => {
     try {
+      if (!auth.currentUser) {
+        showToast("Please login to save tracking data");
+        return;
+      }
+
       const formattedStartTime = startTime ? formatDateTime(startTime) : null;
       
       await addDoc(collection(db, "tracking_data"), {
+        userId: auth.currentUser.uid, // Add user ID to tracking data
         routeCoordinates,
         startTime: formattedStartTime,
         elapsedTime,

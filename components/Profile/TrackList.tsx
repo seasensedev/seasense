@@ -1,13 +1,15 @@
 // TrackList.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "../../config/firebaseConfig";
+import { collection, onSnapshot, where, query } from "firebase/firestore";
+import { db, auth } from "../../config/firebaseConfig";
 import icons from "../../constants/icons";
+import { signOut } from "firebase/auth"; // Add this import at the top
 
 interface Track {
   id: string;
+  userId?: string;
   latitude?: number;
   longitude?: number;
   possibleFishes?: string[];
@@ -35,22 +37,59 @@ const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "tracking_data"), (snapshot) => {
-      const data: Track[] = [];
-      snapshot.forEach((doc) => {
-        data.push({
-          id: doc.id,
-          latitude: doc.data().latitude,
-          longitude: doc.data().longitude,
-          possibleFishes: doc.data().possibleFishes,
-          timestamp: doc.data().timestamp,
-          location: doc.data().location
+    // Check if user is guest (anonymous)
+    if (auth.currentUser?.isAnonymous) {
+      Alert.alert(
+        "Guest Account",
+        "Create an account to save your tracking data permanently. Your guest data will be lost after logging out.",
+        [
+          {
+            text: "Maybe Later",
+            style: "cancel"
+          },
+          {
+            text: "Sign Out",
+            onPress: handleSignOut // Change this line to use the new function
+          }
+        ]
+      );
+      return;
+    }
+
+    if (!auth.currentUser) return; 
+
+    const q = query(
+      collection(db, "tracking_data"),
+      where("userId", "==", auth.currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data: Track[] = [];
+        snapshot.forEach((doc) => {
+          data.push({
+            id: doc.id,
+            userId: doc.data().userId, 
+            latitude: doc.data().latitude,
+            longitude: doc.data().longitude,
+            possibleFishes: doc.data().possibleFishes,
+            timestamp: doc.data().timestamp,
+            location: doc.data().location
+          });
         });
-      });
-      setTrackingData(data);
-      setLoading(false);
-    });
+        setTrackingData(data);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -63,7 +102,6 @@ const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
         latitude: track.latitude,
         longitude: track.longitude,
         possibleFishes: track.possibleFishes,
-        // Convert timestamp object to string for routing
         timestamp: track.timestamp ? JSON.stringify(track.timestamp) : undefined
       }
     });
