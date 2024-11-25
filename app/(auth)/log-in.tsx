@@ -33,7 +33,7 @@ export default function LogIn() {
   }
 
   return (
-    <View className="flex-1 p-6 pt-24 bg-primary">
+    <View className="flex-1 p-6 pt-28 bg-primary">
       <Text className="text-4xl justify-start text-white font-pbold mb-5">
         Welcome Back!
       </Text>
@@ -42,12 +42,14 @@ export default function LogIn() {
         <GoogleButton
           title="Continue as Guest"
           onPress={handleAnonymousLogin}
+          style={{ justifyContent: 'center', alignItems: 'center' }}
         />
         <EmailButton
           title="Log in with Email"
           onPress={() => {
             router.push("/email-login");
           }}
+          style={{ justifyContent: 'center', alignItems: 'center' }}
         />
       </View>
       <View className="flex-row items-center justify-center">

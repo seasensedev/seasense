@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import MapView, { Polyline } from "react-native-maps";
 import * as Location from "expo-location";
-import Toast from "../../components/Toaster/toast";
+import Toast from "@/components/Toaster/Toast";
 import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
-import { database, db, auth } from "../../config/firebaseConfig"; // Add auth import
+import { database, db, auth } from "../../config/firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';

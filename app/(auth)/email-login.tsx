@@ -62,7 +62,7 @@ const EmailLogin = () => {
   };
 
   return (
-    <View className="flex-1 pt-16 items-center bg-primary relative">
+    <View className="flex-1 pt-24 items-center bg-primary relative">
       <View className="mb-4 w-full px-4">
         <Text className="text-lg font-semibold mb-2 text-white">Email Address</Text>
         <TextInput

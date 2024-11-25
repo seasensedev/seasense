@@ -44,8 +44,8 @@ const EmailSignup = () => {
   };
 
   return (
-    <View className="flex-1 pt-16 items-center bg-primary">
-      <View className="mb-4 w-full px-4">
+    <View className="flex-1 pt-24 items-center bg-primary px-4">
+      <View className="mb-4 w-full">
         <Text className="text-lg font-semibold mb-2 text-white">Email</Text>
         <TextInput
           value={email}
@@ -61,7 +61,7 @@ const EmailSignup = () => {
         ) : null}
       </View>
 
-      <View className="mb-4 w-full px-4">
+      <View className="mb-4 w-full">
         <Text className="text-lg font-semibold mb-2 text-white">Password</Text>
         <TextInput
           value={password}
@@ -72,7 +72,7 @@ const EmailSignup = () => {
         />
       </View>
 
-      <View className="mb-4 w-full px-4">
+      <View className="mb-4 w-full">
         <Text className="text-lg font-semibold mb-2 text-white">Confirm Password</Text>
         <TextInput
           value={confirmPassword}

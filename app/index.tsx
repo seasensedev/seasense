@@ -7,7 +7,6 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../hooks/useAuth";
 import { SafeAreaView, ActivityIndicator } from "react-native";
 
-// Configure notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -28,11 +27,7 @@ export default function Index() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.data();
         
-        if (userData?.hasCompletedOnboarding) {
-          router.push('/home');
-        } else {
-          router.push('/onboarding');
-        }
+        router.push('/home');
       } else {
         setLoading(false);
       }

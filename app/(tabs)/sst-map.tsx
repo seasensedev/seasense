@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Alert } from 'react-native';
-import MapView, { Marker, UrlTile, PROVIDER_GOOGLE, Region, MapPressEvent } from 'react-native-maps';
+import MapView, { Marker, UrlTile, Region, MapPressEvent } from 'react-native-maps';
 import { db } from '@/config/firebaseConfig';
 import { getDocs, collection, query, where } from 'firebase/firestore';
 import { useMapTheme } from '../../context/MapThemeContext';
@@ -74,14 +74,13 @@ const SSTMap = () => {
       <MapView
         mapType='hybrid'
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
         initialRegion={region}
         onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
         onPress={handlePress}
         customMapStyle={mapThemes[currentTheme]}
       >
         <UrlTile
-          urlTemplate="http://192.168.114.49:8080/data/try_6/{z}/{x}/{y}.png" //          urlTemplate="http://192.168.254.104:8080/data/sst_davao_3/{z}/{x}/{y}.png"
+          urlTemplate="https://api.maptiler.com/tiles/98696f60-3d2e-4e77-95d9-08fbf744f6ba/{z}/{x}/{y}.png?key=UjAyKS1rfChm8PtV7iAx" 
           maximumZ={12} 
           minimumZ={1}
           flipY={false}
