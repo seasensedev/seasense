@@ -9,15 +9,30 @@ import {
   Modal,
   Animated,
 } from "react-native";
-import MapView, { Polyline } from "react-native-maps";
+import MapView, { Polyline, Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import Toast from "@/components/Toaster/Toast";
 import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
 import { database, db, auth } from "../../config/firebaseConfig";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore"; 
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
+import { Ionicons } from '@expo/vector-icons'; 
+interface PinnedLocation {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+  userId?: string;
+  locationDetails?: {
+    street: string | null;
+    district: string | null;
+    city: string | null;
+    region: string | null;
+    country: string | null;
+  };
+  currentCity?: string | null;
+}
 
 export const TrackingMap = () => {
   const [location, setLocation] =
@@ -50,7 +65,12 @@ export const TrackingMap = () => {
     region: null,
     country: null,
   });
-
+  const [pinnedLocations, setPinnedLocations] = useState<PinnedLocation[]>([]); 
+  const [isPinning, setIsPinning] = useState(false); 
+  const [lastPinnedLocation, setLastPinnedLocation] = useState<PinnedLocation | null>(null); 
+  const [showUndo, setShowUndo] = useState(false);
+  const [trackingSessionId, setTrackingSessionId] = useState<string | null>(null); 
+  const [isSaving, setIsSaving] = useState(false);
   const showToast = (message: string) => {
     setToastMessage(message);
     setToastVisible(true);
@@ -68,7 +88,6 @@ export const TrackingMap = () => {
         return;
       }
 
-      // Get the initial location
       const initialLocation = await Location.getCurrentPositionAsync({});
       setLocation(initialLocation.coords);
       reverseGeocode(initialLocation.coords);
@@ -138,13 +157,20 @@ export const TrackingMap = () => {
     try {
       if (!auth.currentUser) {
         showToast("Please login to save tracking data");
-        return;
+        return null;
       }
+
+      // Fetch current weather data
+      const { latitude, longitude } = location || {};
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m`
+      );
+      const weatherData = await weatherResponse.json();
 
       const formattedStartTime = startTime ? formatDateTime(startTime) : null;
       
-      await addDoc(collection(db, "tracking_data"), {
-        userId: auth.currentUser.uid, // Add user ID to tracking data
+      const docRef = await addDoc(collection(db, "tracking_data"), {
+        userId: auth.currentUser.uid, 
         routeCoordinates,
         startTime: formattedStartTime,
         elapsedTime,
@@ -159,17 +185,35 @@ export const TrackingMap = () => {
           currentCity: currentCity,
         },
         temperature: temperature,
+        pinnedLocations: pinnedLocations,
+        weather: {
+          temperature: weatherData.current.temperature_2m,
+          precipitation: weatherData.current.precipitation,
+          weatherCode: weatherData.current.weather_code,
+          windSpeed: weatherData.current.wind_speed_10m,
+          windDirection: weatherData.current.wind_direction_10m
+        }
       });
+
       console.log("Tracking data saved to Firestore!");
+      return docRef.id;
     } catch (error) {
       console.error("Error saving tracking data to Firestore: ", error);
+      return null;
     }
   };
 
   
   const startTracking = async () => {
     if (!isTracking) {
-     
+      setRouteCoordinates([]);
+      setPinnedLocations([]);
+      setLastPinnedLocation(null);
+      setShowUndo(false);
+      setHasMovedRecently(false);
+      setTrackingSessionId(null);
+      setSpeed(null);
+      
       setIsTracking(true);
       setStartTime(Date.now());
       setElapsedTime(0);
@@ -233,21 +277,112 @@ export const TrackingMap = () => {
         );
         return; 
       }
-      setIsLoading(true);
-      setTimeout(async () => {
-      setIsTracking(false);
-      if (watchPositionSubscription) {
-        watchPositionSubscription.remove();
-        setWatchPositionSubscription(null);
-      }
-      setIsLoading(false);
-      showToast("Tracking Stopped");
-
-      await saveTrackingDataToFirestore();
+      setIsSaving(true); // Start saving state
+      showToast("Saving track...");
+  
+      try {
+        // Stop tracking first
+        setIsTracking(false);
+        if (watchPositionSubscription) {
+          watchPositionSubscription.remove();
+          setWatchPositionSubscription(null);
+        }
+  
+        // Save the data
+        const sessionId = await saveTrackingDataToFirestore();
+        if (sessionId) {
+          setTrackingSessionId(sessionId);
+          showToast("Track saved successfully!");
+        } else {
+          throw new Error("Failed to save tracking data");
+        }
+  
+      } catch (error) {
+        console.error("Error stopping tracking:", error);
+        showToast("Failed to save track");
+      } finally {
+        setIsSaving(false); // Clear saving state
+        setIsLoading(false); // Clear loading state
         
-      }, 1200);
+        // Reset states after successful save
+        setRouteCoordinates([]);
+        setPinnedLocations([]);
+        setElapsedTime(0);
+        setStartTime(null);
+        setSpeed(null);
+      }
     }
   };
+  
+
+  const undoLastPin = async () => {
+    try {
+      if (!lastPinnedLocation) return;
+  
+      setPinnedLocations(prev => 
+        prev.filter(pin => pin.timestamp !== lastPinnedLocation.timestamp)
+      );
+  
+      setLastPinnedLocation(null);
+      setShowUndo(false);
+      showToast("Pin removed");
+    } catch (error) {
+      console.error("Error removing pin: ", error);
+      showToast("Failed to remove pin");
+    }
+  };
+  
+  const pinCurrentLocation = async () => {
+    if (!isTracking) {
+      Alert.alert(
+        "Tracking Required",
+        "Please start tracking first before adding location pins.",
+        [
+          {
+            text: "OK",
+            style: "default"
+          }
+        ]
+      );
+      return;
+    }
+  
+    if (!location || isPinning) return;
+  
+    try {
+      setIsPinning(true);
+      
+      if (!auth.currentUser) {
+        showToast("Please login to save pins");
+        return;
+      }
+  
+      const newPin = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timestamp: Date.now(),
+        userId: auth.currentUser.uid,
+        locationDetails,
+        currentCity,
+      };
+  
+      setPinnedLocations(prev => [...prev, newPin]);
+      setLastPinnedLocation(newPin);
+      setShowUndo(true);
+      showToast("Location pinned!");
+  
+      setTimeout(() => {
+        setShowUndo(false);
+      }, 5000);
+  
+    } catch (error) {
+      console.error("Error saving pin: ", error);
+      showToast("Failed to save pin");
+    } finally {
+      setIsPinning(false);
+    }
+  };
+  
 
   if (errorMsg) {
     Alert.alert("Location Error", errorMsg);
@@ -340,7 +475,7 @@ export const TrackingMap = () => {
           ref={mapRef}
           style={styles.map}
           mapType="standard"
-          customMapStyle={mapThemes[currentTheme]} // Change this line
+          customMapStyle={mapThemes[currentTheme]}
           initialRegion={{
             latitude: location.latitude,
             longitude: location.longitude,
@@ -356,6 +491,18 @@ export const TrackingMap = () => {
             strokeColor="#fff"
             strokeWidth={5}
           />
+          {pinnedLocations.map((pin, index) => (
+            <Marker
+              key={`pin-${pin.timestamp}`}
+              coordinate={{
+                latitude: pin.latitude,
+                longitude: pin.longitude,
+              }}
+              pinColor="#1e5aa0"
+              title={`Pin ${index + 1}`}
+              description={`${new Date(pin.timestamp).toLocaleString()}`}
+            />
+          ))}
         </MapView>
       ) : (
         <View className="flex-1 justify-center items-center">
@@ -367,21 +514,51 @@ export const TrackingMap = () => {
         </View>
       )}
 
+      {/* Add Pin button above the other buttons */}
+      <View className="absolute right-4 bottom-24 flex flex-col space-y-2">
+        {showUndo && (
+          <TouchableOpacity
+            className="bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+            onPress={undoLastPin}
+          >
+            <Ionicons name="arrow-undo" size={24} color="#1e5aa0" />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          className="bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+          onPress={pinCurrentLocation}
+          disabled={isPinning}
+        >
+          {isPinning ? (
+            <ActivityIndicator size="small" color="#1e5aa0" />
+          ) : (
+            <Ionicons name="location" size={24} color="#1e5aa0" />
+          )}
+        </TouchableOpacity>
+      </View>
+      
       <View className="flex flex-row justify-center space-x-2">
         <TouchableOpacity
-          className="bg-[#1e5aa0] rounded-full px-12 py-3 items-center "
+          className={`bg-[#1e5aa0] rounded-full px-12 py-3 items-center ${
+            isSaving && 'opacity-75'
+          }`}
           onPress={startTracking}
-          disabled={isLoading} 
+          disabled={isSaving}
         >
-          {isLoading && isTracking ? ( 
-            <ActivityIndicator size="small" color="#fff" />
+          {isSaving ? (
+            <View className="flex-row items-center">
+              <ActivityIndicator size="small" color="#fff" />
+              <Text className="font-psemibold text-white text-lg font-bold ml-2">
+                Saving...
+              </Text>
+            </View>
           ) : (
             <Text className="font-psemibold text-white text-lg font-bold">
               {isTracking ? "Stop Tracking" : "Start Tracking"}
             </Text>
           )}
         </TouchableOpacity>
-
+        
         <TouchableOpacity
           className="bg-[#1e5aa0] rounded-full px-9 py-3 items-center"
           onPress={openDrawer}

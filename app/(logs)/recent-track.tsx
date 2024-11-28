@@ -1,13 +1,12 @@
-// recent-track.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
-import { db, auth } from "../../config/firebaseConfig"; // Add this import
-import { useRouter } from "expo-router"; // Add this import
+import { doc, getDoc, deleteDoc, addDoc, collection } from "firebase/firestore";
+import { db, auth } from "../../config/firebaseConfig"; 
+import { useRouter } from "expo-router"; 
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
 
@@ -16,7 +15,7 @@ const RecentTrack = () => {
   const router = useRouter();
 
   interface TrackData {
-    userId: string; // Add userId to interface
+    userId: string; 
     elapsedTime: number;
     location: {
       coordinates: {
@@ -43,16 +42,37 @@ const RecentTrack = () => {
       time: string;
       timestamp: number;
     };
+    pinnedLocations?: Array<{
+      latitude: number;
+      longitude: number;
+      timestamp: number;
+      locationDetails?: {
+        street: string | null;
+        district: string | null;
+        city: string | null;
+        region: string | null;
+        country: string | null;
+      };
+      currentCity?: string | null;
+    }>;
+    weather?: {
+      temperature: number;
+      precipitation: number;
+      weatherCode: number;
+      windSpeed: number;
+      windDirection: number;
+    };
   }
 
   const [trackData, setTrackData] = useState<TrackData | null>(null);
   const { currentTheme } = useMapTheme();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   useEffect(() => {
     const fetchTrackDetails = async () => {
       if (!auth.currentUser) {
-        router.back(); // Redirect if no user is logged in
+        router.back(); 
         return;
       }
 
@@ -60,9 +80,8 @@ const RecentTrack = () => {
         const trackDoc = await getDoc(doc(db, "tracking_data", params.trackId as string));
         if (trackDoc.exists()) {
           const data = trackDoc.data() as TrackData;
-          // Verify the track belongs to the current user
           if (data.userId !== auth.currentUser.uid) {
-            router.back(); // Redirect if track doesn't belong to user
+            router.back(); 
             return;
           }
           setTrackData(data);
@@ -87,7 +106,6 @@ const RecentTrack = () => {
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Modify the getCenterAndDeltas function for better zoom level calculation
   const getCenterAndDeltas = (coordinates: Array<{latitude: number; longitude: number}>) => {
     if (!coordinates || coordinates.length === 0) {
       return {
@@ -113,7 +131,6 @@ const RecentTrack = () => {
     const centerLat = (minLat + maxLat) / 2;
     const centerLng = (minLng + maxLng) / 2;
     
-    // Calculate appropriate deltas with padding
     const latDelta = (maxLat - minLat) * 1.2;
     const lngDelta = (maxLng - minLng) * 1.2;
 
@@ -125,30 +142,101 @@ const RecentTrack = () => {
     };
   };
 
-  // Add delete function
-  const handleDelete = async () => {
+  const getWeatherDescription = (code: number) => {
+    switch (code) {
+      case 0: return "Clear Sky";
+      case 1:
+      case 2:
+      case 3: return "Partly Cloudy";
+      case 45:
+      case 48: return "Foggy";
+      case 51:
+      case 53:
+      case 55: return "Drizzle";
+      case 61:
+      case 63:
+      case 65: return "Rainy";
+      case 80:
+      case 81:
+      case 82: return "Showers";
+      case 95:
+      case 96:
+      case 99: return "Thunderstorm";
+      default: return "Unknown";
+    }
+  };
+
+  const handleDeleteDocument = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteDoc(doc(db, "tracking_data", params.trackId as string));
+      router.back();
+    } catch (error) {
+      console.error("Error deleting track:", error);
+      Alert.alert("Error", "Failed to delete track. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleArchive = async (trackData: any) => {
+    setIsArchiving(true);
+    try {
+      // Add to archive collection
+      await addDoc(collection(db, 'archived_tracks'), {
+        ...trackData,
+        archivedAt: new Date().toISOString(),
+        originalId: params.trackId,
+      });
+
+      // Delete from tracking_data
+      await deleteDoc(doc(db, "tracking_data", params.trackId as string));
+      
+      Alert.alert(
+        "Success",
+        "Track archived successfully",
+        [{ text: "OK", onPress: () => router.back() }]
+      );
+    } catch (error) {
+      console.error("Error archiving track:", error);
+      Alert.alert("Error", "Failed to archive track");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleDeletePress = () => {
     Alert.alert(
       "Delete Track",
-      "Are you sure you want to delete this track? This action cannot be undone.",
+      "What would you like to do with this track?",
       [
         {
           text: "Cancel",
           style: "cancel"
         },
         {
-          text: "Delete",
+          text: "Archive",
+          onPress: () => handleArchive(trackData)
+        },
+        {
+          text: "Delete Permanently",
           style: "destructive",
-          onPress: async () => {
-            try {
-              setIsDeleting(true);
-              await deleteDoc(doc(db, "tracking_data", params.trackId as string));
-              router.back();
-            } catch (error) {
-              console.error("Error deleting track:", error);
-              Alert.alert("Error", "Failed to delete track. Please try again.");
-            } finally {
-              setIsDeleting(false);
-            }
+          onPress: () => {
+            Alert.alert(
+              "Confirm Delete",
+              "This action cannot be undone. Are you sure?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel"
+                },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: handleDeleteDocument
+                }
+              ]
+            );
           }
         }
       ]
@@ -169,13 +257,29 @@ const RecentTrack = () => {
                 latitude: trackData.location.coordinates.latitude,
                 longitude: trackData.location.coordinates.longitude,
               }}
-            >
-            </Marker>
+            />
             <Polyline
               coordinates={trackData.routeCoordinates}
               strokeColor="#1e5aa0"
               strokeWidth={3}
             />
+            {/* Add Pinned Locations */}
+            {trackData.pinnedLocations?.map((pin, index) => (
+              <Marker
+                key={`pin-${pin.timestamp}`}
+                coordinate={{
+                  latitude: pin.latitude,
+                  longitude: pin.longitude,
+                }}
+                pinColor="#1e5aa0"
+                title={`Pin ${index + 1}`}
+                description={`${new Date(pin.timestamp).toLocaleString()}`}
+              >
+                <View className="bg-white p-1 rounded-full border-2 border-[#1e5aa0]">
+                  <Ionicons name="location" size={20} color="#1e5aa0" />
+                </View>
+              </Marker>
+            ))}
           </MapView>
         </View>
 
@@ -231,6 +335,79 @@ const RecentTrack = () => {
                 {trackData.temperature}°C
               </Text>
             </View>
+
+            {/* Weather Card */}
+            {trackData.weather && (
+              <View className="bg-white p-4 rounded-xl shadow-sm w-full mb-4">
+                <View className="flex-row items-center mb-4">
+                  <Ionicons name="partly-sunny" size={24} color="#1e5aa0" />
+                  <Text className="ml-2 text-xl font-pbold text-gray-800">Weather Conditions</Text>
+                </View>
+                
+                <View className="space-y-3">
+                  <View className="flex-row justify-between items-center">
+                    <View className="flex-row items-center">
+                      <Ionicons name="cloud" size={20} color="#666" />
+                      <Text className="ml-2 text-gray-600 font-pregular">
+                        Condition
+                      </Text>
+                    </View>
+                    <Text className="text-gray-800 font-pmedium">
+                      {getWeatherDescription(trackData.weather.weatherCode)}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row justify-between items-center">
+                    <View className="flex-row items-center">
+                      <Ionicons name="water" size={20} color="#666" />
+                      <Text className="ml-2 text-gray-600 font-pregular">
+                        Precipitation
+                      </Text>
+                    </View>
+                    <Text className="text-gray-800 font-pmedium">
+                      {trackData.weather.precipitation} mm
+                    </Text>
+                  </View>
+
+                  <View className="flex-row justify-between items-center">
+                    <View className="flex-row items-center">
+                      <Ionicons name="speedometer" size={20} color="#666" />
+                      <Text className="ml-2 text-gray-600 font-pregular">
+                        Wind Speed
+                      </Text>
+                    </View>
+                    <Text className="text-gray-800 font-pmedium">
+                      {trackData.weather.windSpeed} km/h
+                    </Text>
+                  </View>
+
+                  <View className="flex-row justify-between items-center">
+                    <View className="flex-row items-center">
+                      <Ionicons name="compass" size={20} color="#666" />
+                      <Text className="ml-2 text-gray-600 font-pregular">
+                        Wind Direction
+                      </Text>
+                    </View>
+                    <Text className="text-gray-800 font-pmedium">
+                      {trackData.weather.windDirection}°
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Add Pins Count Card if there are pins */}
+            {trackData.pinnedLocations && trackData.pinnedLocations.length > 0 && (
+              <View className="bg-white p-4 rounded-xl shadow-sm w-[48%] mb-4">
+                <View className="flex-row items-center mb-2">
+                  <Ionicons name="location" size={24} color="#1e5aa0" />
+                  <Text className="ml-2 text-gray-500 font-pmedium">Pins</Text>
+                </View>
+                <Text className="text-gray-800 font-pbold">
+                  {trackData.pinnedLocations.length}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Location Details Card */}
@@ -271,14 +448,13 @@ const RecentTrack = () => {
             </View>
           </View>
 
-          {/* Add Delete Button after Location Details Card */}
           <View className="mt-4">
-            {isDeleting ? (
+            {isArchiving || isDeleting ? (
               <ActivityIndicator size="large" color="#dc2626" />
             ) : (
               <TouchableOpacity
                 className="bg-red-600 rounded-full py-3 items-center mb-2"
-                onPress={handleDelete}
+                onPress={handleDeletePress}
               >
                 <View className="flex-row items-center space-x-3">
                   <Ionicons name="trash-outline" size={24} color="white" />
