@@ -1,0 +1,170 @@
+{
+  "fishes": [
+    {
+      "fish_name": "Bilong-bilong",
+      "species_name": "Mene Maculata",
+      "temperature": 25.3,
+      "temp_desc": 3,
+      "date_catched": "2024-11-12",
+      "latitude": 6.8662,
+      "longitude": 125.5249
+    },
+    {
+      "fish_name": "Matambaka",
+      "species_name": "Rastrelliger faughni",
+      "temperature": 28.0,
+      "temp_desc": 4,
+      "date_catched": "2024-11-13",
+      "latitude": 6.8774,
+      "longitude": 125.5625
+    },
+    {
+      "fish_name": "Bangus",
+      "species_name": "Chanos Chanos",
+      "temperature": 22.1,
+      "temp_desc": 2,
+      "date_catched": "2024-11-14",
+      "latitude": 6.9660,
+      "longitude": 125.6428
+    },
+    {
+      "fish_name": "Lapu-Lapu",
+      "species_name": "Anyperodon leucogrammicus",
+      "temperature": 27.5,
+      "temp_desc": 3,
+      "date_catched": "2024-11-14",
+      "latitude": 6.8673,
+      "longitude": 125.6044
+    },
+    {
+      "fish_name": "Barilis",
+      "species_name": "Thunnus albacares",
+      "temperature": 24.6,
+      "temp_desc": 3,
+      "date_catched": "2024-11-15",
+      "latitude": 6.8893,
+      "longitude": 125.6128
+    },
+    {
+      "fish_name": "Bilong-bilong",
+      "species_name": "Mene Maculata",
+      "temperature": 26.0,
+      "temp_desc": 3,
+      "date_catched": "2024-11-16",
+      "latitude": 6.8662,
+      "longitude": 125.5249
+    },
+    {
+      "fish_name": "Barilis",
+      "species_name": "Thunnus albacares",
+      "temperature": 24.3,
+      "temp_desc": 3,
+      "date_catched": "2024-11-14",
+      "latitude": 6.8893,
+      "longitude": 125.6128
+    },
+    {
+      "fish_name": "Bilong-bilong",
+      "species_name": "Mene Maculata",
+      "temperature": 24.6,
+      "temp_desc": 3,
+      "date_catched": "2024-11-15",
+      "latitude": 6.8662,
+      "longitude": 125.5249
+    },
+    {
+      "fish_name": "Matambaka",
+      "species_name": "Rastrelliger faughni",
+      "temperature": 27.0,
+      "temp_desc": 4,
+      "date_catched": "2024-11-16",
+      "latitude": 6.8774,
+      "longitude": 125.5625
+    },
+    {
+      "fish_name": "Danggit",
+      "species_name": "Siganus vermiculatusi",
+      "temperature": 25.3,
+      "temp_desc": 3,
+      "date_catched": "2024-11-01",
+      "latitude": 7.0308,
+      "longitude": 125.8435
+    },
+    {
+      "fish_name": "Tamban",
+      "species_name": "Sardinella lemuru",
+      "temperature": 23.5,
+      "temp_desc": 3,
+      "date_catched": "2024-11-02",
+      "latitude": 6.9567,
+      "longitude": 125.9056
+    },
+    {
+      "fish_name": "Malasugi",
+      "species_name": "Istiophorus platypterus",
+      "temperature": 19.8,
+      "temp_desc": 1,
+      "date_catched": "2024-11-03",
+      "latitude": 6.8567,
+      "longitude": 125.7406
+    },
+    {
+      "fish_name": "Dilis",
+      "species_name": "Stolephorus commersonnii",
+      "temperature": 27.1,
+      "temp_desc": 3,
+      "date_catched": "2024-11-04",
+      "latitude": 6.7342,
+      "longitude": 125.9009
+    },
+    {
+      "fish_name": "Bisugo",
+      "species_name": "Nemipterus bathybius",
+      "temperature": 20.4,
+      "temp_desc": 1,
+      "date_catched": "2024-11-05",
+      "latitude": 6.8453,
+      "longitude": 126.0012
+    },
+    {
+      "fish_name": "Dilis",
+      "species_name": "Stolephorus commersonnii",
+      "temperature": 26.8,
+      "temp_desc": 3,
+      "date_catched": "2024-11-28",
+      "latitude": 6.7342,
+      "longitude": 125.9009
+    },
+    {
+      "fish_name": "Bisugo",
+      "species_name": "Nemipterus bathybius",
+      "temperature": 21.0,
+      "temp_desc": 1,
+      "date_catched": "2024-11-28",
+      "latitude": 6.8453,
+      "longitude": 126.0012
+    }
+  ],
+  "metadata": {
+    "temperature_range": {
+      "min": 18.4,
+      "max": 28.1
+    },
+    "location": {
+      "latitude_range": {
+        "min": 6.7342,
+        "max": 7.1722
+      },
+      "longitude_range": {
+        "min": 125.4909,
+        "max": 126.0012
+      }
+    },
+    "temp_desc_mapping": {
+      "1": "Cold",
+      "2": "Cool",
+      "3": "Moderate",
+      "4": "Warm"
+    }
+  }
+}
