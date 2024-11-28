@@ -29,6 +29,8 @@ import { User } from "firebase/auth";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import FishingSpotList from "../../components/Profile/FishingSpotList";
 import TrackList from "../../components/Profile/TrackList";
+import { Ionicons } from '@expo/vector-icons';
+import ArchiveButton from "../../components/Buttons/ArchiveButton";
 
 interface FishingSpot {
   id: string;
@@ -231,10 +233,10 @@ const Profile = () => {
           </View>
         </View>
 
-        <View className="flex flex-row justify-between items-left space-x-2 mt-1">
+        <View className="flex flex-row justify-between items-center mt-1">
           <TouchableOpacity
             onPress={toggleDropdown}
-            className="mt-1 flex-row space-x-1.5"
+            className="flex-row items-center space-x-1.5"
           >
             <Text className="text-black text-lg font-psemibold">
               {selectedTab}
@@ -245,7 +247,11 @@ const Profile = () => {
               resizeMode="contain"
             />
           </TouchableOpacity>
-          <AddButton onPress={handleAddButtonPress} />
+
+          <View className="flex-row space-x-2">
+            <ArchiveButton onPress={() => router.push("/archived-tracks" as never)} />
+            <AddButton onPress={handleAddButtonPress} />
+          </View>
         </View>
 
         {dropdownVisible && (
