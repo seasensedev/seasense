@@ -15,10 +15,10 @@ import Toast from "@/components/Toaster/Toast";
 import Temperature from "../../components/Temperature/temperature";
 import { ref, onValue } from "firebase/database";
 import { database, db, auth } from "../../config/firebaseConfig";
-import { collection, addDoc } from "firebase/firestore"; 
-import { useMapTheme } from '../../context/MapThemeContext';
-import { mapThemes } from '../../constants/mapStyles';
-import { Ionicons } from '@expo/vector-icons'; 
+import { collection, addDoc } from "firebase/firestore";
+import { useMapTheme } from "../../context/MapThemeContext";
+import { mapThemes } from "../../constants/mapStyles";
+import { Ionicons } from "@expo/vector-icons";
 interface PinnedLocation {
   latitude: number;
   longitude: number;
@@ -32,6 +32,7 @@ interface PinnedLocation {
     country: string | null;
   };
   currentCity?: string | null;
+  temperature?: number | null;
 }
 
 export const TrackingMap = () => {
@@ -65,11 +66,14 @@ export const TrackingMap = () => {
     region: null,
     country: null,
   });
-  const [pinnedLocations, setPinnedLocations] = useState<PinnedLocation[]>([]); 
-  const [isPinning, setIsPinning] = useState(false); 
-  const [lastPinnedLocation, setLastPinnedLocation] = useState<PinnedLocation | null>(null); 
+  const [pinnedLocations, setPinnedLocations] = useState<PinnedLocation[]>([]);
+  const [isPinning, setIsPinning] = useState(false);
+  const [lastPinnedLocation, setLastPinnedLocation] =
+    useState<PinnedLocation | null>(null);
   const [showUndo, setShowUndo] = useState(false);
-  const [trackingSessionId, setTrackingSessionId] = useState<string | null>(null); 
+  const [trackingSessionId, setTrackingSessionId] = useState<string | null>(
+    null
+  );
   const [isSaving, setIsSaving] = useState(false);
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -108,7 +112,6 @@ export const TrackingMap = () => {
       return () => clearInterval(interval);
     }
   }, [isTracking, startTime]);
-  
 
   useEffect(() => {
     const sensorDataRef = ref(database, "sensor_data/");
@@ -149,7 +152,7 @@ export const TrackingMap = () => {
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString(),
-      timestamp: timestamp
+      timestamp: timestamp,
     };
   };
 
@@ -159,8 +162,7 @@ export const TrackingMap = () => {
         showToast("Please login to save tracking data");
         return null;
       }
-
-      // Fetch current weather data
+      
       const { latitude, longitude } = location || {};
       const weatherResponse = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m`
@@ -168,9 +170,9 @@ export const TrackingMap = () => {
       const weatherData = await weatherResponse.json();
 
       const formattedStartTime = startTime ? formatDateTime(startTime) : null;
-      
+
       const docRef = await addDoc(collection(db, "tracking_data"), {
-        userId: auth.currentUser.uid, 
+        userId: auth.currentUser.uid,
         routeCoordinates,
         startTime: formattedStartTime,
         elapsedTime,
@@ -191,8 +193,8 @@ export const TrackingMap = () => {
           precipitation: weatherData.current.precipitation,
           weatherCode: weatherData.current.weather_code,
           windSpeed: weatherData.current.wind_speed_10m,
-          windDirection: weatherData.current.wind_direction_10m
-        }
+          windDirection: weatherData.current.wind_direction_10m,
+        },
       });
 
       console.log("Tracking data saved to Firestore!");
@@ -203,7 +205,6 @@ export const TrackingMap = () => {
     }
   };
 
-  
   const startTracking = async () => {
     if (!isTracking) {
       setRouteCoordinates([]);
@@ -213,7 +214,7 @@ export const TrackingMap = () => {
       setHasMovedRecently(false);
       setTrackingSessionId(null);
       setSpeed(null);
-      
+
       setIsTracking(true);
       setStartTime(Date.now());
       setElapsedTime(0);
@@ -233,7 +234,6 @@ export const TrackingMap = () => {
 
           setSpeed(speed ? parseFloat((speed * 3.6).toFixed(2)) : 0);
 
-          
           mapRef.current?.animateToRegion(
             {
               latitude,
@@ -243,52 +243,23 @@ export const TrackingMap = () => {
             },
             1000
           );
-          
-          setHasMovedRecently(speed !== null && speed > 0); 
+
+          setHasMovedRecently(speed !== null && speed > 0);
           reverseGeocode(newLocation.coords);
         }
       );
 
       setWatchPositionSubscription(subscription);
     } else {
-      if (!hasMovedRecently) {
-        Alert.alert(
-          "Not moving yet?",
-          "SeaSense needs a longer activity to upload and analyze. Please continue or start over.",
-          [
-            {
-              text: "Discard",
-              onPress: () => {
-                setIsTracking(false);
-                if (watchPositionSubscription) {
-                  watchPositionSubscription.remove();
-                  setWatchPositionSubscription(null);
-                }
-              },
-              style: "cancel",
-            },
-            {
-              text: "Resume",
-              onPress: () => {
-              },
-            },
-          ],
-          { cancelable: false }
-        );
-        return; 
-      }
-      setIsSaving(true); // Start saving state
+      setIsSaving(true);
       showToast("Saving track...");
-  
+
       try {
-        // Stop tracking first
         setIsTracking(false);
         if (watchPositionSubscription) {
           watchPositionSubscription.remove();
           setWatchPositionSubscription(null);
         }
-  
-        // Save the data
         const sessionId = await saveTrackingDataToFirestore();
         if (sessionId) {
           setTrackingSessionId(sessionId);
@@ -296,14 +267,13 @@ export const TrackingMap = () => {
         } else {
           throw new Error("Failed to save tracking data");
         }
-  
       } catch (error) {
         console.error("Error stopping tracking:", error);
         showToast("Failed to save track");
       } finally {
-        setIsSaving(false); // Clear saving state
-        setIsLoading(false); // Clear loading state
-        
+        setIsSaving(false);
+        setIsLoading(false);
+
         // Reset states after successful save
         setRouteCoordinates([]);
         setPinnedLocations([]);
@@ -313,16 +283,15 @@ export const TrackingMap = () => {
       }
     }
   };
-  
 
   const undoLastPin = async () => {
     try {
       if (!lastPinnedLocation) return;
-  
-      setPinnedLocations(prev => 
-        prev.filter(pin => pin.timestamp !== lastPinnedLocation.timestamp)
+
+      setPinnedLocations((prev) =>
+        prev.filter((pin) => pin.timestamp !== lastPinnedLocation.timestamp)
       );
-  
+
       setLastPinnedLocation(null);
       setShowUndo(false);
       showToast("Pin removed");
@@ -331,7 +300,7 @@ export const TrackingMap = () => {
       showToast("Failed to remove pin");
     }
   };
-  
+
   const pinCurrentLocation = async () => {
     if (!isTracking) {
       Alert.alert(
@@ -340,23 +309,23 @@ export const TrackingMap = () => {
         [
           {
             text: "OK",
-            style: "default"
-          }
+            style: "default",
+          },
         ]
       );
       return;
     }
-  
+
     if (!location || isPinning) return;
-  
+
     try {
       setIsPinning(true);
-      
+
       if (!auth.currentUser) {
         showToast("Please login to save pins");
         return;
       }
-  
+
       const newPin = {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -364,17 +333,17 @@ export const TrackingMap = () => {
         userId: auth.currentUser.uid,
         locationDetails,
         currentCity,
+        temperature: temperature,
       };
-  
-      setPinnedLocations(prev => [...prev, newPin]);
+
+      setPinnedLocations((prev) => [...prev, newPin]);
       setLastPinnedLocation(newPin);
       setShowUndo(true);
       showToast("Location pinned!");
-  
+
       setTimeout(() => {
         setShowUndo(false);
       }, 5000);
-  
     } catch (error) {
       console.error("Error saving pin: ", error);
       showToast("Failed to save pin");
@@ -382,7 +351,6 @@ export const TrackingMap = () => {
       setIsPinning(false);
     }
   };
-  
 
   if (errorMsg) {
     Alert.alert("Location Error", errorMsg);
@@ -404,9 +372,6 @@ export const TrackingMap = () => {
       useNativeDriver: true,
     }).start(() => setModalVisible(false));
   };
-
-  
-
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -536,11 +501,11 @@ export const TrackingMap = () => {
           )}
         </TouchableOpacity>
       </View>
-      
+
       <View className="flex flex-row justify-center space-x-2">
         <TouchableOpacity
           className={`bg-[#1e5aa0] rounded-full px-12 py-3 items-center ${
-            isSaving && 'opacity-75'
+            isSaving && "opacity-75"
           }`}
           onPress={startTracking}
           disabled={isSaving}
@@ -558,7 +523,7 @@ export const TrackingMap = () => {
             </Text>
           )}
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           className="bg-[#1e5aa0] rounded-full px-9 py-3 items-center"
           onPress={openDrawer}
