@@ -45,7 +45,6 @@ const EditLocation = () => {
   const router = useRouter();
   const { currentTheme } = useMapTheme();
 
-  // Firebase references
   const storage = getStorage();
   const db = getFirestore();
   const auth = getAuth();
@@ -261,7 +260,6 @@ const EditLocation = () => {
   );
 };
 
-// Update styles to match navigate-location.tsx
 const styles = StyleSheet.create({
   container: {
     height: "60%",

@@ -87,7 +87,6 @@ const EditCatches = () => {
     }
   };
 
-  // Parse the dayCaught and timeCaught into Date objects
   const parseDate = (dateStr: string) => new Date(dateStr);
   const parseTime = (timeStr: string) => {
     const [hours, minutes, seconds] = timeStr.split(":");
@@ -99,11 +98,9 @@ const EditCatches = () => {
     );
   };
 
-  // State for date and time pickers
   const [isDayPickerVisible, setDayPickerVisible] = useState(false);
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
-  // State to handle date and time change
   const [selectedDate, setSelectedDate] = useState(
     parseDate(dayCaught?.toString() ?? new Date().toISOString().split("T")[0])
   );
@@ -151,22 +148,20 @@ const EditCatches = () => {
       const db = getFirestore();
       const catchRef = doc(db, "log_catch", String(id));
 
-      // Prepare updated data
       const updatedData = {
         description: descriptionText,
         fishName: fishNameText,
         fishWeight: fishWeightText,
         fishLength: fishLengthText,
-        dayCaught: selectedDate.toISOString().split("T")[0], // Convert date to ISO string
-        timeCaught: selectedTime.toISOString().split("T")[1].split(".")[0], // Convert time to ISO string
+        dayCaught: selectedDate.toISOString().split("T")[0], 
+        timeCaught: selectedTime.toISOString().split("T")[1].split(".")[0], 
         latitude: lat,
         longitude: lon,
       };
 
-      // Update Firestore document
       await setDoc(catchRef, updatedData, { merge: true });
       Alert.alert("Success", "Catch details updated successfully.");
-      router.back(); // Navigate back to the previous screen
+      router.back(); 
     } catch (error) {
       console.error("Error updating catch details:", error);
       Alert.alert("Error", "Failed to update catch details.");
@@ -197,11 +192,9 @@ const EditCatches = () => {
 
       console.log("Deleting document with ID:", id);
 
-      // Delete the catch document from Firestore
       await deleteDoc(doc(db, "log_catch", String(id)));
       console.log("Document deleted from Firestore.");
 
-      // If a screenshot URL exists, delete the image from Firebase Storage
       if (screenshotURL) {
         const imageRef = ref(storage, screenshotURL.toString());
         await deleteObject(imageRef);
@@ -209,7 +202,7 @@ const EditCatches = () => {
       }
 
       Alert.alert("Success", "Catch deleted successfully.");
-      router.back(); // Navigate back to the previous screen
+      router.back(); 
     } catch (error) {
       console.error("Error deleting catch:", error);
       Alert.alert("Error", "Failed to delete catch.");
@@ -246,7 +239,7 @@ const EditCatches = () => {
             zoomEnabled={false}
             scrollEnabled={false}
             onPress={handleMapPress}
-            customMapStyle={mapThemes[currentTheme]} // Add this line
+            customMapStyle={mapThemes[currentTheme]} 
           >
             <Marker
               coordinate={{ latitude: region.latitude, longitude: region.longitude }}

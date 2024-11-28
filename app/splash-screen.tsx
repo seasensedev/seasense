@@ -11,7 +11,6 @@ export default function SplashScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // Handle anonymous sign-in
   const handleAnonymousSignIn = async () => {
     setLoading(true);
     try {

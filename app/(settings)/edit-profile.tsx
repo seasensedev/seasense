@@ -36,7 +36,6 @@ export default function EditProfile() {
       const db = getFirestore();
 
       if (user) {
-        // Fetch user data from Firestore
         const userDoc = doc(db, "users", user.uid);
         const docSnap = await getDoc(userDoc);
         if (docSnap.exists()) {
@@ -82,7 +81,6 @@ export default function EditProfile() {
 
     if (user) {
       try {
-        // Fetch current user data for comparison
         const userDoc = doc(db, "users", user.uid);
         const docSnap = await getDoc(userDoc);
         if (docSnap.exists()) {
@@ -91,7 +89,6 @@ export default function EditProfile() {
           const currentLastName = data.lastName || "";
           const currentPhotoURL = data.photoURL || "";
 
-          // Check if there are changes
           const hasChanges =
             firstName !== currentFirstName ||
             lastName !== currentLastName ||
@@ -103,7 +100,6 @@ export default function EditProfile() {
             return;
           }
 
-          // Prepare update data
           const updateData: any = {};
           if (firstName || lastName) {
             updateData.displayName = `${firstName} ${lastName}`;
@@ -155,7 +151,6 @@ export default function EditProfile() {
             style: "destructive",
             onPress: async () => {
               try {
-                // Delete user data from Firestore
                 const db = getFirestore();
                 const userDoc = doc(db, "users", user.uid);
                 await updateDoc(userDoc, {
@@ -165,7 +160,6 @@ export default function EditProfile() {
                   photoURL: null,
                 });
 
-                // Delete user account
                 await deleteUser(user);
                 Alert.alert("Success", "Your account has been deleted.");
                 router.push("/");

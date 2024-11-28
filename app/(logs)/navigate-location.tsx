@@ -47,10 +47,13 @@ const NavigateLocation = () => {
   const router = useRouter();
   const { currentTheme } = useMapTheme();
 
-  // Firebase references
   const storage = getStorage();
   const db = getFirestore();
   const auth = getAuth();
+
+  const debounceTimeout = useRef<NodeJS.Timeout>();
+  const isInitialRender = useRef(true);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -60,16 +63,27 @@ const NavigateLocation = () => {
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      setRegion({
-        latitude,
-        longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-      setCurrentLocation({ latitude, longitude });
-      setCenterLocation({ latitude, longitude });
+      try {
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced 
+        });
+        const { latitude, longitude } = location.coords;
+        
+
+        if (isInitialRender.current) {
+          setRegion({
+            latitude,
+            longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          });
+          setCurrentLocation({ latitude, longitude });
+          setCenterLocation({ latitude, longitude });
+          isInitialRender.current = false;
+        }
+      } catch (error) {
+        console.error("Error getting location:", error);
+      }
     };
 
     getLocation();
@@ -117,17 +131,34 @@ const NavigateLocation = () => {
     }
   }, [isPanning, pulseAnimation, opacityPulseAnimation, dotOpacityAnimation]);
 
-  const handleRegionChange = () => {
+  const handleRegionChange = (newRegion: any) => {
+    // Clear any existing timeout
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
     setIsPanning(true);
+
+    // Set a new timeout
+    debounceTimeout.current = setTimeout(() => {
+      if (isMapReady) {
+        setRegion(newRegion);
+        setCenterLocation({
+          latitude: newRegion.latitude,
+          longitude: newRegion.longitude,
+        });
+        setIsPanning(false);
+      }
+    }, 100); // Debounce for 100ms
   };
 
   const handleRegionChangeComplete = (newRegion: any) => {
+    if (!isMapReady) return;
+
     setIsPanning(false);
     if (
       Math.abs(newRegion.latitude - region.latitude) > 0.0001 ||
-      Math.abs(newRegion.longitude - region.longitude) > 0.0001 ||
-      Math.abs(newRegion.latitudeDelta - region.latitudeDelta) > 0.0001 ||
-      Math.abs(newRegion.longitudeDelta - region.longitudeDelta) > 0.0001
+      Math.abs(newRegion.longitude - region.longitude) > 0.0001
     ) {
       setRegion(newRegion);
       setCenterLocation({
@@ -145,6 +176,10 @@ const NavigateLocation = () => {
       longitude,
     }));
     setCurrentLocation({ latitude, longitude });
+  };
+
+  const handleMapReady = () => {
+    setIsMapReady(true);
   };
 
   const saveLocation = async () => {
@@ -202,7 +237,7 @@ const NavigateLocation = () => {
 
   return (
     <SafeAreaView className="bg-white flex-1">
-      <View className="mt-14">
+      <View className="mt-24">
         <View className="flex flex-row text-lg justify-center font-semibold text-black space-x-28">
           <Text className="text-lg font-psemibold text-black">
             Lat:{" "}
@@ -216,26 +251,37 @@ const NavigateLocation = () => {
       </View>
       <View style={styles.container} className="mt-2">
         <MapView
+          ref={mapRef}
           style={styles.map}
           mapType="standard"
-          region={region}
+          initialRegion={region}
+          onMapReady={handleMapReady}
           onRegionChange={handleRegionChange}
           onRegionChangeComplete={handleRegionChangeComplete}
           onPress={handleMapPress}
-          ref={mapRef}
           customMapStyle={mapThemes[currentTheme]}
+          moveOnMarkerPress={false}
+          rotateEnabled={false}
+          toolbarEnabled={false}
+          loadingEnabled={true}
+          loadingIndicatorColor="#1e5aa0"
+          loadingBackgroundColor="#ffffff"
         >
-          <Marker
-            coordinate={currentLocation}
-            title="Current Location"
-            description="This is where you are"
-          />
-          <Marker
-            coordinate={centerLocation}
-            title="Center Location"
-            description="Center of the map"
-            pinColor="blue"
-          />
+          {isMapReady && (
+            <>
+              <Marker
+                coordinate={currentLocation}
+                title="Current Location"
+                description="This is where you are"
+              />
+              <Marker
+                coordinate={centerLocation}
+                title="Center Location"
+                description="Center of the map"
+                pinColor="blue"
+              />
+            </>
+          )}
         </MapView>
         <View style={styles.markerFixed}>
           <Animated.View

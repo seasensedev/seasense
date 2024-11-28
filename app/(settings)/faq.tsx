@@ -27,7 +27,7 @@ export default function FAQ() {
 
   return (
     <SafeAreaView className="flex-1 p-4 bg-white">
-      <View className="mt-12">
+      <View className="mt-20">
         <Text className="text-xl text-primary font-pbold mb-4">Frequently Asked Questions</Text>
         {faqData.map((item, index) => (
           <View key={index}>

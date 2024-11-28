@@ -58,7 +58,7 @@ const NotificationSettings = () => {
   return (
     <ScrollView className="flex-1 bg-white p-5">
       
-      <View className="bg-gray-100 rounded-lg p-4 mb-4 mt-10">
+      <View className="bg-gray-100 rounded-lg p-4 mb-4 mt-20">
         <View className="flex-row justify-between items-center mb-2">
           <View>
             <Text className="text-lg font-medium mb-1">Weather Alerts</Text>

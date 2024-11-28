@@ -35,23 +35,18 @@ const CatchDetails = () => {
   const params = useLocalSearchParams();
   const { latitude, longitude, description, documentId } = params;
 
-  // Convert documentId to string and validate
   const docId = Array.isArray(documentId) ? documentId[0] : documentId;
 
-  // Validate required params
   if (!docId) {
     console.error("Document ID is undefined");
     return null;
   }
 
-  // Convert latitude and longitude to numbers
   const lat = parseFloat(latitude as string);
   const lon = parseFloat(longitude as string);
 
-  // State to manage the focus of the TextInputs
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-  // State for date and time pickers
   const [dayCaught, setDayCaught] = useState(new Date());
   const [timeCaught, setTimeCaught] = useState(new Date());
   const [isDayPickerVisible, setDayPickerVisible] = useState(false);
@@ -60,12 +55,10 @@ const CatchDetails = () => {
   const [fishWeight, setFishWeight] = useState<string>("");
   const [fishLength, setFishLength] = useState<string>("");
 
-  // State for loading spinner
   const [loading, setLoading] = useState(false);
 
   const { currentTheme } = useMapTheme();
 
-  // Handle date and time changes
   const onChangeDate = (event: any, selectedDate: Date | undefined) => {
     const currentDate = selectedDate || dayCaught;
     setDayPickerVisible(Platform.OS === "ios");
@@ -78,7 +71,6 @@ const CatchDetails = () => {
     setTimeCaught(currentTime);
   };
 
-  // Function to save catch details
   const handleSaveCatchDetails = async () => {
     const db = getFirestore();
     const auth = getAuth();
@@ -121,7 +113,6 @@ const CatchDetails = () => {
     });
   };
 
-  // Function to handle document deletion
   const handleDeleteDocument = async () => {
     const db = getFirestore();
     const docRef = doc(db, "log_catch", docId);
@@ -129,7 +120,7 @@ const CatchDetails = () => {
     setLoading(true);
     try {
       await deleteDoc(docRef);
-      router.push("/navigate-location");
+      router.push("/profile");
     } catch (error) {
       console.error("Error deleting document:", error);
     } finally {
@@ -137,7 +128,6 @@ const CatchDetails = () => {
     }
   };
 
-  // Function to handle back button press
   const handleBackPress = () => {
     Alert.alert(
       "Discard Details?",

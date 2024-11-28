@@ -32,6 +32,9 @@ export default function LogsLayout() {
           headerTransparent: false,
           headerTitleStyle: { color: "black" },
           headerTintColor: "black",
+          headerLeft: () => null, 
+          headerBackVisible: false, 
+          gestureEnabled: false, 
         }}
       />
       <Stack.Screen
@@ -48,6 +51,26 @@ export default function LogsLayout() {
         name="recent-track"
         options={{
           title: "Recent Track",
+          headerShown: true,
+          headerTransparent: false,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+        }}
+      />
+       <Stack.Screen
+        name="summary"
+        options={{
+          title: "Fishing Summary",
+          headerShown: true,
+          headerTransparent: false,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+        }}
+      />
+       <Stack.Screen
+        name="archived-tracks"
+        options={{
+          title: "Archive",
           headerShown: true,
           headerTransparent: false,
           headerTitleStyle: { color: "black" },

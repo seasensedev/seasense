@@ -25,7 +25,7 @@ const MapThemesScreen = () => {
 
   return (
     <ScrollView className="flex-1 bg-white pt-10">
-      <View className="p-4">
+      <View className="p-4 mt-10">
         <Text className="text-gray-600 mb-4">
           Select your preferred map style. This will be applied across all maps in the app.
         </Text>

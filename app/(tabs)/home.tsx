@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl, Alert } from "react-native";
+import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl, Alert, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from 'expo-location';
 import { LocationObject } from 'expo-location';
@@ -10,10 +10,8 @@ import icons from "../../constants/icons";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import Skeleton from "../../components/Skeleton";
-import * as Notifications from 'expo-notifications';
-
-const WAVE_HEIGHT_THRESHOLD = 2; // meters
-const WAVE_PERIOD_THRESHOLD = 10; // seconds
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const Home = () => {
   const [hourlyWaveHeights, setHourlyWaveHeights] = useState<number[]>([]);
@@ -33,10 +31,10 @@ const Home = () => {
   const [locationAddress, setLocationAddress] = useState<string>("Loading...");
   const [location, setLocation] = useState<LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
 
   const auth = getAuth();
   const db = getFirestore();
+  const router = useRouter();
 
   const getUserData = async () => {
     const user = auth.currentUser;
@@ -50,7 +48,6 @@ const Home = () => {
     }
   };
 
-  // Fetch user's location
   const getLocation = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -62,7 +59,6 @@ const Home = () => {
     let location = await Location.getCurrentPositionAsync({});
     setLocation(location);
 
-    // Reverse Geocoding to get the address
     const reverseGeocode = await Location.reverseGeocodeAsync(location.coords);
     if (reverseGeocode.length > 0) {
       const address = `${reverseGeocode[0].city}, ${reverseGeocode[0].region}`;
@@ -74,7 +70,6 @@ const Home = () => {
     return location;
   };
 
-  // Fetch weather data using the user's location
   const getWeatherData = async () => {
     try {
       const location = await getLocation();
@@ -82,13 +77,11 @@ const Home = () => {
 
       const { latitude, longitude } = location.coords;
 
-      // Weather API
       const weatherResponse = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&daily=weather_code,temperature_2m_max,wind_speed_10m_max,wind_direction_10m_dominant`
       );
       const weatherData = await weatherResponse.json();
 
-      // Marine Forecast API
       const marineResponse = await fetch(
         `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period&daily=&timezone=Asia%2FSingapore`
       );
@@ -127,7 +120,6 @@ const Home = () => {
       setLoading(false);
       setRefreshing(false);
       
-      // Check weather conditions after data is loaded
       checkWeatherConditions();
     } catch (error) {
       setLoading(false);
@@ -136,81 +128,9 @@ const Home = () => {
     }
   };
 
-  const requestNotificationPermissions = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    setNotificationPermission(status === 'granted');
-    return status === 'granted';
-  };
-
-  const scheduleWaveNotification = async (
-    height: number,
-    direction: number,
-    period: number
-  ) => {
-    if (!notificationPermission) return;
-  
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Wave Conditions Update',
-          body: `Wave Height: ${height.toFixed(1)}m\nDirection: ${direction}°\nPeriod: ${period}s`,
-          data: { type: 'wave' },
-        },
-        trigger: null,
-      });
-    } catch (error) {
-      console.error('Error scheduling wave notification:', error);
-    }
-  };
-
-  const scheduleWeatherNotification = async (weatherDescription: string, temperature: number | null) => {
-    if (!notificationPermission) return;
-  
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Weather Alert',
-          body: `Weather has changed to ${weatherDescription}\nTemperature: ${temperature}°C`,
-          data: { type: 'weather' },
-        },
-        trigger: null,
-      });
-    } catch (error) {
-      console.error('Error scheduling weather notification:', error);
-    }
-  };
-
   const checkWeatherConditions = () => {
     if (!loading && weatherCodes[0] !== undefined && temperature !== null) {
       const description = getWeatherDescription(weatherCodes[0]);
-      
-      // Check for severe weather conditions
-      if (
-        weatherCodes[0] >= 95 || // Thunderstorm
-        weatherCodes[0] >= 65 || // Heavy rain
-        temperature >= 35 || // Very hot
-        temperature <= 10 // Very cold
-      ) {
-        scheduleWeatherNotification(description, temperature);
-      }
-  
-      // Check wave conditions
-      if (hourlyWaveHeights.length > 0) {
-        const currentWaveHeight = hourlyWaveHeights[0];
-        const currentWaveDirection = hourlyWaveDirections[0];
-        const currentWavePeriod = hourlyWavePeriods[0];
-  
-        if (
-          currentWaveHeight >= WAVE_HEIGHT_THRESHOLD ||
-          currentWavePeriod >= WAVE_PERIOD_THRESHOLD
-        ) {
-          scheduleWaveNotification(
-            currentWaveHeight,
-            currentWaveDirection,
-            currentWavePeriod
-          );
-        }
-      }
     }
   };
 
@@ -219,7 +139,6 @@ const Home = () => {
   
     const setup = async () => {
       if (isMounted) {
-        await requestNotificationPermissions();
         await getUserData();
         await getWeatherData();
       }
@@ -227,14 +146,8 @@ const Home = () => {
   
     setup();
   
-    // Configure notification handler
-    const subscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
-    });
-  
     return () => {
       isMounted = false;
-      subscription.remove();
     };
   }, []);
 
@@ -546,6 +459,27 @@ const Home = () => {
               )}
             </View>
           </LinearGradient>
+
+          <TouchableOpacity
+            onPress={() => router.push("/summary" as never)}
+            className="mt-6"
+          >
+            <LinearGradient
+              colors={["#4a90e2", "#0e4483"]}
+              start={{ x:.0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              locations={[0, 1]}
+              style={{
+                borderRadius: 10,
+                padding: 16,
+              }}
+            >
+              <View className="flex-row items-center justify-between">
+                <Text className="text-white text-lg font-semibold">Fishing Summary</Text>
+                <Ionicons name="fish" size={24} color="white" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
 
           {/* Wave Height Chart */}
           <View className="mt-6">

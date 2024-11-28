@@ -84,11 +84,6 @@ export default function Settings() {
           <Text className="ml-3 text-base">About</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100" onPressIn={() => router.push("/fish-predict" as never)}>
-          <AntDesign name="infocirlce" size={24} color="#4F8EF7" />
-          <Text className="ml-3 text-base">Predict</Text>
-        </TouchableOpacity>
-        
         <TouchableOpacity 
           className="flex-row items-center p-2 bg-gray-100 rounded-b-lg" 
           onPress={handleSignOut} 

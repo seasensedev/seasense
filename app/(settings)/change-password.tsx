@@ -96,7 +96,7 @@ const ChangePassword = () => {
 
   return (
     <SafeAreaView className="bg-white flex-1">
-      <View className="mt-14 p-4">
+      <View className="mt-20 p-4">
         <EditForm
           label="Current Password"
           value={currentPassword}
