@@ -177,147 +177,149 @@ export default function Summary() {
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView className="flex-1">
-        {/* Map Container */}
-        <View className="h-[300px]">
-          <MapView
-            style={StyleSheet.absoluteFillObject}
-            initialRegion={
-              trackingData.length > 0
-                ? getBoundsOfAll(trackingData)
-                : {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
-                  }
-            }
-            customMapStyle={mapThemes[currentTheme]}
-            showsUserLocation
-            showsMyLocationButton
-          >
-            {trackingData.map((track, trackIndex) => (
-              <React.Fragment key={track.id}>
-                <Polyline
-                  coordinates={track.routeCoordinates}
-                  strokeColor={`hsl(${(trackIndex * 137) % 360}, 70%, 50%)`}
-                  strokeWidth={3}
-                />
-                
-                {track.pinnedLocations?.map((pin, pinIndex) => (
-                  <Marker
-                    key={`${track.id}-pin-${pin.timestamp}`}
-                    coordinate={{
-                      latitude: pin.latitude,
-                      longitude: pin.longitude,
-                    }}
-                    title={`Pin ${pinIndex + 1}`}
-                    description={`${track.timestamp.date} ${track.timestamp.time}`}
-                  >
-                    <View className="bg-white p-1 rounded-full border-2 border-[#1e5aa0]">
-                      <Ionicons name="location" size={20} color="#1e5aa0" />
-                    </View>
-                  </Marker>
-                ))}
-              </React.Fragment>
-            ))}
-          </MapView>
-        </View>
-
-        {/* Analytics Charts */}
-        <View className="p-4">
-          <Text className="font-pbold text-xl text-[#1e5aa0] mb-4">Analytics Overview</Text>
-          
-          {/* Temperature Line Chart */}
-          <View className="mb-6 bg-white rounded-lg p-4 shadow-sm">
-            <Text className="font-pbold text-[#1e5aa0] mb-2">Temperature Trends</Text>
-            <LineChart
-              data={{
-                labels: trackingData.map(track => track.timestamp.date.slice(-5)),
-                datasets: [{
-                  data: trackingData.map(track => track.temperature || 0)
-                }]
-              }}
-              width={Dimensions.get("window").width - 40}
-              height={220}
-              chartConfig={{
-                backgroundColor: "#ffffff",
-                backgroundGradientFrom: "#ffffff",
-                backgroundGradientTo: "#ffffff",
-                decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
-                  borderRadius: 16
-                },
-                propsForDots: {
-                  r: "6",
-                  strokeWidth: "2",
-                  stroke: "#1e5aa0"
+      {/* Fixed Map Container */}
+      <View className="h-[300px]">
+        <MapView
+          style={StyleSheet.absoluteFillObject}
+          initialRegion={
+            trackingData.length > 0
+              ? getBoundsOfAll(trackingData)
+              : {
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
                 }
-              }}
-              bezier
-              style={{
-                marginVertical: 8,
-                borderRadius: 16
-              }}
-            />
-          </View>
+          }
+          customMapStyle={mapThemes[currentTheme]}
+          showsUserLocation
+          showsMyLocationButton
+        >
+          {trackingData.map((track, trackIndex) => (
+            <React.Fragment key={track.id}>
+              <Polyline
+                coordinates={track.routeCoordinates}
+                strokeColor={`hsl(${(trackIndex * 137) % 360}, 70%, 50%)`}
+                strokeWidth={3}
+              />
+              
+              {track.pinnedLocations?.map((pin, pinIndex) => (
+                <Marker
+                  key={`${track.id}-pin-${pin.timestamp}`}
+                  coordinate={{
+                    latitude: pin.latitude,
+                    longitude: pin.longitude,
+                  }}
+                  title={`Pin ${pinIndex + 1}`}
+                  description={`${track.timestamp.date} ${track.timestamp.time}`}
+                >
+                  <View className="bg-white p-1 rounded-full border-2 border-[#1e5aa0]">
+                    <Ionicons name="location" size={20} color="#1e5aa0" />
+                  </View>
+                </Marker>
+              ))}
+            </React.Fragment>
+          ))}
+        </MapView>
+      </View>
 
-          {/* Time Spent Bar Chart */}
-          <View className="mb-6 bg-white rounded-lg p-4 shadow-sm">
-            <Text className="font-pbold text-[#1e5aa0] mb-2">Time Spent Per Track</Text>
-            <BarChart
-              data={{
-                labels: trackingData.map((_, index) => `T${index + 1}`),
-                datasets: [{
-                  data: trackingData.map(track => (track.elapsedTime || 0) / 60) 
-                }]
-              }}
-              width={Dimensions.get("window").width - 40}
-              height={220}
-              chartConfig={{
-                backgroundColor: "#ffffff",
-                backgroundGradientFrom: "#ffffff",
-                backgroundGradientTo: "#ffffff",
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
+      {/* Scrollable Analytics Container */}
+      <View className="flex-1">
+        <ScrollView>
+          <View className="px-4 pt-4">
+            <Text className="font-pbold text-xl text-[#1e5aa0] mb-4">Analytics Overview</Text>
+            
+            {/* Summary Stats Cards */}
+            <View className="bg-white rounded-lg p-4 shadow-sm flex-row justify-between flex-wrap mb-6">
+              <View className="items-center w-1/2 mb-4">
+                <Text className="font-pbold text-[#1e5aa0]">Total Tracks</Text>
+                <Text className="font-pmedium text-2xl">{trackingData.length}</Text>
+              </View>
+              <View className="items-center w-1/2 mb-4">
+                <Text className="font-pbold text-[#1e5aa0]">Total Pins</Text>
+                <Text className="font-pmedium text-2xl">{analytics.totalPins}</Text>
+              </View>
+              <View className="items-center w-1/2">
+                <Text className="font-pbold text-[#1e5aa0]">Avg Temp</Text>
+                <Text className="font-pmedium text-2xl">{analytics.averageTemp.toFixed(1)}°C</Text>
+              </View>
+              <View className="items-center w-1/2">
+                <Text className="font-pbold text-[#1e5aa0]">Total Time</Text>
+                <Text className="font-pmedium text-2xl">{formatTime(analytics.totalTime)}</Text>
+              </View>
+            </View>
+
+            {/* Temperature Line Chart */}
+            <View className="bg-white rounded-lg p-4 shadow-sm mb-6">
+              <Text className="font-pbold text-[#1e5aa0] mb-4">Temperature Trends</Text>
+              <LineChart
+                data={{
+                  labels: trackingData.map(track => track.timestamp.date.slice(-5)),
+                  datasets: [{
+                    data: trackingData.map(track => track.temperature || 0)
+                  }]
+                }}
+                width={Dimensions.get("window").width - 48}
+                height={200}
+                chartConfig={{
+                  backgroundColor: "#ffffff",
+                  backgroundGradientFrom: "#ffffff",
+                  backgroundGradientTo: "#ffffff",
+                  decimalPlaces: 1,
+                  color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  propsForDots: {
+                    r: "4",
+                    strokeWidth: "2",
+                    stroke: "#1e5aa0"
+                  },
+                  propsForLabels: {
+                    fontSize: 12
+                  }
+                }}
+                bezier
+                style={{
+                  marginVertical: 8,
                   borderRadius: 16
-                },
-              }}
-              yAxisLabel=""
-              yAxisSuffix="m"
-              style={{
-                marginVertical: 8,
-                borderRadius: 16
-              }}
-              verticalLabelRotation={0}
-            />
-          </View>
+                }}
+              />
+            </View>
 
-          {/* Fixed Summary Stats section */}
-          <View className="bg-white rounded-lg p-4 shadow-sm flex-row justify-between flex-wrap">
-            <View className="items-center w-1/2 mb-4">
-              <Text className="font-pbold text-[#1e5aa0]">Total Tracks</Text>
-              <Text className="font-pmedium text-2xl">{trackingData.length}</Text>
-            </View>
-            <View className="items-center w-1/2 mb-4">
-              <Text className="font-pbold text-[#1e5aa0]">Total Pins</Text>
-              <Text className="font-pmedium text-2xl">{analytics.totalPins}</Text>
-            </View>
-            <View className="items-center w-1/2">
-              <Text className="font-pbold text-[#1e5aa0]">Avg Temp</Text>
-              <Text className="font-pmedium text-2xl">{analytics.averageTemp.toFixed(1)}°C</Text>
-            </View>
-            <View className="items-center w-1/2">
-              <Text className="font-pbold text-[#1e5aa0]">Total Time</Text>
-              <Text className="font-pmedium text-2xl">{formatTime(analytics.totalTime)}</Text>
+            {/* Time Spent Bar Chart */}
+            <View className="bg-white rounded-lg p-4 shadow-sm mb-6">
+              <Text className="font-pbold text-[#1e5aa0] mb-4">Time Spent Per Track</Text>
+              <BarChart
+                data={{
+                  labels: trackingData.map((_, index) => `T${index + 1}`),
+                  datasets: [{
+                    data: trackingData.map(track => (track.elapsedTime || 0) / 60) 
+                  }]
+                }}
+                width={Dimensions.get("window").width - 48}
+                height={200}
+                chartConfig={{
+                  backgroundColor: "#ffffff",
+                  backgroundGradientFrom: "#ffffff",
+                  backgroundGradientTo: "#ffffff",
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  propsForLabels: {
+                    fontSize: 12
+                  }
+                }}
+                yAxisLabel=""
+                yAxisSuffix="m"
+                style={{
+                  marginVertical: 8,
+                  borderRadius: 16
+                }}
+                verticalLabelRotation={0}
+              />
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

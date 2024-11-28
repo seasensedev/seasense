@@ -54,6 +54,14 @@ export default function Settings() {
           <AntDesign name="mail" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">Frequently Asked Questions</Text>
         </TouchableOpacity>
+        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100" onPressIn={() => router.push("/help" as never)}>
+          <AntDesign name="questioncircle" size={24} color="#4F8EF7" />
+          <Text className="ml-3 text-base">Help Center</Text>
+        </TouchableOpacity>
+        <TouchableOpacity className="flex-row items-center p-2 bg-gray-100" onPressIn={() => router.push("/feedback" as never)}>
+          <AntDesign name="message1" size={24} color="#4F8EF7" />
+          <Text className="ml-3 text-base">Send Feedback</Text>
+        </TouchableOpacity>
         <TouchableOpacity className="flex-row items-center p-2 bg-gray-100 rounded-b-lg">
           <AntDesign name="paperclip" size={24} color="#4F8EF7" />
           <Text className="ml-3 text-base">Documentation</Text>
