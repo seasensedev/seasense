@@ -1,10 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Alert } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import MapView, { Marker, UrlTile, Region, MapPressEvent } from 'react-native-maps';
-import { db } from '@/config/firebaseConfig';
-import { getDocs, collection, query, where } from 'firebase/firestore';
+import * as Location from 'expo-location';
 import { useMapTheme } from '../../context/MapThemeContext';
-import { mapThemes } from '../../constants/mapStyles';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const Legend = () => {
+  const temperatures = ['30.76°C', '30.24°C', '29.81°C', '29.77°C', '29.18°C'];
+  const colors = ['#D20000', '#FF7C11', '#FFD200', '#0079C1', '#000A2A'];
+
+  return (
+    <View className="absolute bottom-5 right-5 bg-white/95 p-2 rounded-lg shadow-lg">
+      <View className="flex-row items-center gap-2">
+        <LinearGradient
+          colors={colors}
+          className="w-4 h-[100px] rounded-full"
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+        <View className="h-[100px] justify-between">
+          {temperatures.map((temp, index) => (
+            <Text key={index} className="text-xs text-gray-700">
+              {temp}
+            </Text>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const LocationHeader = ({ location }: { location: Location.LocationObject | null }) => {
+  if (!location) return null;
+  
+  return (
+    <View className="absolute top-5 left-5 right-5 bg-white/90 p-4 rounded-lg shadow-lg">
+      <View className="flex-row justify-between items-center">
+        <View>
+          <Text className="text-lg font-bold text-gray-800">Davao Gulf</Text>
+          <Text className="text-sm text-gray-600">
+            {location.coords.latitude.toFixed(4)}°N, {location.coords.longitude.toFixed(4)}°E
+          </Text>
+        </View>
+        <View>
+          <Text className="font-bold text-right text-sm text-gray-700">
+            {new Date().toLocaleString('en-US', {
+              timeZone: 'Asia/Singapore',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true
+            })}
+          </Text>
+          <Text className="text-right text-xs text-gray-500">
+            {new Date().toLocaleString('en-US', {
+              timeZone: 'Asia/Singapore',
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const SSTMap = () => {
   type SSTData = {
@@ -23,6 +83,7 @@ const SSTMap = () => {
   });
 
   const { currentTheme } = useMapTheme();
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
 
   const fetchData = async () => {
     try{
@@ -65,19 +126,45 @@ const SSTMap = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Permission to access location was denied');
+        return;
+      }
 
-  // Replace with the actual URL or local file path for your tiles
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+
+      const subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 5000,
+          distanceInterval: 10,
+        },
+        (newLocation) => {
+          setLocation(newLocation);
+        }
+      );
+
+      return () => {
+        subscription.remove();
+      };
+    })();
+  }, []);
+
+
   const tilesUrl = 'http://localhost:8080/';
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1">
       <MapView
         mapType='hybrid'
-        style={styles.map}
+        className="flex-1"
         initialRegion={region}
         onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
         onPress={handlePress}
-        customMapStyle={mapThemes[currentTheme]}
       >
         <UrlTile
           urlTemplate="https://api.maptiler.com/tiles/98696f60-3d2e-4e77-95d9-08fbf744f6ba/{z}/{x}/{y}.png?key=UjAyKS1rfChm8PtV7iAx" 
@@ -85,19 +172,22 @@ const SSTMap = () => {
           minimumZ={1}
           flipY={false}
         />
+        {location && (
+          <Marker
+            coordinate={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            title="Current Location"
+            pinColor="blue"
+          />
+        )}
       </MapView>
+      <LocationHeader location={location} />
+      <Legend />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    flex: 1,
-  },
-});
 
 export default SSTMap;
 
