@@ -17,6 +17,7 @@ WebBrowser.maybeCompleteAuthSession();
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<{ firstName: string; lastName: string } | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '246358053582-95e65gm2ti0chd85b9dmrs8dleiu63rn.apps.googleusercontent.com',
     androidClientId: '246358053582-95e65gm2ti0chd85b9dmrs8dleiu63rn.apps.googleusercontent.com',
@@ -27,7 +28,6 @@ export const useAuth = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        // Fetch additional user data from Firestore using UID
         const userDoc = doc(db, "users", user.uid);
         const userSnapshot = await getDoc(userDoc);
         if (userSnapshot.exists()) {
@@ -52,7 +52,13 @@ export const useAuth = () => {
   }, [response]);
 
   const signUpWithEmailAndPassword = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      setIsNewUser(true);
+      return userCredential.user;
+    } catch (error: any) {
+      throw error;
+    }
   };
 
   const loginWithEmailAndPassword = async (email: string, password: string) => {
@@ -70,5 +76,6 @@ export const useAuth = () => {
     loginWithEmailAndPassword,
     signOut,
     signInWithGoogle: () => promptAsync(),
+    isNewUser,
   };
 };

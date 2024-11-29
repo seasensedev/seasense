@@ -1,28 +1,12 @@
 import React, { useState } from "react";
 import { Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
 import EmailButton from "../../components/Buttons/EmailButton";
-import GoogleButton from "../../components/Buttons/GoogleButton";
 import { useRouter } from "expo-router";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 
 export default function LogIn() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  // Handle anonymous login
-  const handleAnonymousLogin = async () => {
-    setLoading(true);
-    try {
-      const auth = getAuth();
-      await signInAnonymously(auth);
-      console.log("Logged in anonymously");
-      router.push("/home");
-    } catch (error) {
-      console.error("Anonymous Login Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -39,11 +23,6 @@ export default function LogIn() {
       </Text>
 
       <View className="mt-5">
-        <GoogleButton
-          title="Continue as Guest"
-          onPress={handleAnonymousLogin}
-          style={{ justifyContent: 'center', alignItems: 'center' }}
-        />
         <EmailButton
           title="Log in with Email"
           onPress={() => {
@@ -56,7 +35,7 @@ export default function LogIn() {
         <Text className="text-white text-center mt-10 mr-1 text-lg">
           Not yet a member?
         </Text>
-        <TouchableOpacity onPress={() => router.push("/")}>
+        <TouchableOpacity onPress={() => router.push("/email-signup")}>
           <Text className="text-white text-center mt-10 text-lg font-bold">
             Create account
           </Text>

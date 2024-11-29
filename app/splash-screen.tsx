@@ -2,36 +2,11 @@ import React, { useState } from "react";
 import { Text, View, ScrollView, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import EmailButton from "../components/Buttons/EmailButton";
-import GoogleButton from "../components/Buttons/GoogleButton";
 import images from "../constants/images";
 import { useRouter } from "expo-router";
-import { getAuth, signInAnonymously } from "firebase/auth";
 
 export default function SplashScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  const handleAnonymousSignIn = async () => {
-    setLoading(true);
-    try {
-      const auth = getAuth();
-      await signInAnonymously(auth);
-      console.log("Signed in anonymously");
-      router.push("/home"); 
-    } catch (error) {
-      console.error("Anonymous Sign-In Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView className="bg-[#0e4483] h-full flex justify-center items-center">
-        <ActivityIndicator size="large" color="#ffffff" />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView className="bg-[#0e4483] h-full">
@@ -46,10 +21,6 @@ export default function SplashScreen() {
             Find fishing spots, get weather forecasts, and track fish behaviors!
           </Text>
           <View className="mt-10">
-            <GoogleButton
-              title="Continue as Guest"
-              onPress={handleAnonymousSignIn}
-            />
             <EmailButton
               title="Continue with Email"
               onPress={() => {
