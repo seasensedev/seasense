@@ -18,14 +18,21 @@ android {
 
     namespace 'com.geomapper.map'
     defaultConfig {
-        applicationId 'com.geomapper.map'
+        applicationId 'com.seasense'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0"
     }
 
     // Keep existing signingConfigs and buildTypes
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -47,8 +54,11 @@ android {
 // Keep the existing packaging options configuration
 
 dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    //noinspection GradleDynamicVersion
+    implementation "com.facebook.react:react-native:+"
     
     // Keep existing GIF and WebP configurations
 
@@ -62,7 +72,6 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.6.0'
 }
 
-apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
-applyNativeModulesAppBuildGradle(project)
-
+// Replace the last two lines with:
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 apply plugin: 'com.google.gms.google-services'
