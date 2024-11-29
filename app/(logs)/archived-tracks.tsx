@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { collection, query, getDocs, doc, deleteDoc, addDoc, where } from 'firebase/firestore';
+import { collection, query, getDocs, doc, deleteDoc, addDoc, where, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -26,6 +26,7 @@ interface ArchivedTrack {
     longitude: number;
     timestamp: number;
   }>;
+  isHidden?: boolean;
 }
 
 export default function ArchivedTracks() {
@@ -64,7 +65,8 @@ export default function ArchivedTracks() {
       const q = query(
         collection(db, 'archived_tracks'),
         where('userId', '==', auth.currentUser.uid),
-        where('isArchived', '==', true)
+        where('isArchived', '==', true),
+        where('isHidden', '==', false)  
       );
       
       const querySnapshot = await getDocs(q);
@@ -128,6 +130,33 @@ export default function ArchivedTracks() {
     }
   };
 
+  const handleHideTrack = async (track: ArchivedTrack) => {
+    if (!auth.currentUser || auth.currentUser.isAnonymous || 
+        track.userId !== auth.currentUser.uid) {
+      Alert.alert("Error", "You don't have permission to delete this track");
+      return;
+    }
+
+    try {
+      const trackRef = doc(db, 'archived_tracks', track.id);
+      
+      // Update the document to mark it as hidden instead of deleting it
+      await updateDoc(trackRef, {
+        isHidden: true,
+        hiddenAt: new Date().toISOString(),
+        hiddenBy: auth.currentUser.uid
+      });
+
+      // Refresh the tracks list
+      await loadArchivedTracks();
+      
+      Alert.alert("Success", "Track removed from your archive");
+    } catch (error) {
+      console.error("Error hiding track:", error);
+      Alert.alert("Error", "Failed to remove track");
+    }
+  };
+
   if (auth.currentUser?.isAnonymous) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-white">
@@ -171,15 +200,35 @@ export default function ArchivedTracks() {
                 </Text>
               </View>
               
-              <TouchableOpacity
-                className="bg-[#1e5aa0] rounded-full py-2 px-4 mt-3"
-                onPress={() => handleRestore(track)}
-                disabled={restoring}
-              >
-                <Text className="text-white text-center font-pmedium">
-                  {restoring ? 'Restoring...' : 'Restore Track'}
-                </Text>
-              </TouchableOpacity>
+              <View className="flex-row justify-between mt-3">
+                <TouchableOpacity
+                  className="bg-[#1e5aa0] rounded-full py-2 px-4 flex-1 mr-2"
+                  onPress={() => handleRestore(track)}
+                  disabled={restoring}
+                >
+                  <Text className="text-white text-center font-pmedium">
+                    {restoring ? 'Restoring...' : 'Restore Track'}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  className="bg-red-600 rounded-full py-2 px-4 flex-1 ml-2"
+                  onPress={() => {
+                    Alert.alert(
+                      "Remove Track",
+                      "Are you sure you want to remove this track from your archive?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Remove", style: "destructive", onPress: () => handleHideTrack(track) }
+                      ]
+                    );
+                  }}
+                >
+                  <Text className="text-white text-center font-pmedium">
+                    Remove
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
