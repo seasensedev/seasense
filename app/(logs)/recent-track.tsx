@@ -442,58 +442,81 @@ const RecentTrack = () => {
             {/* Add Pins Count Card if there are pins */}
             {trackData.pinnedLocations && trackData.pinnedLocations.length > 0 && (
               <View className="bg-white p-4 rounded-xl shadow-sm w-full mb-4">
-                <View className="flex-row items-center mb-2">
-                  <Ionicons name="location" size={24} color="#1e5aa0" />
-                  <Text className="ml-2 text-gray-500 font-pmedium">
-                    Pinned Locations ({trackData.pinnedLocations.length})
-                  </Text>
+                <View className="flex-row items-center justify-between mb-4">
+                  <View className="flex-row items-center">
+                    <Ionicons name="location" size={24} color="#1e5aa0" />
+                    <Text className="ml-2 text-xl font-pbold text-gray-800">
+                      Pinned Locations
+                    </Text>
+                  </View>
+                  <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-[#1e5aa0] font-pmedium">
+                      {trackData.pinnedLocations.length} pins
+                    </Text>
+                  </View>
                 </View>
                 
-                {/* Add ScrollView with max height */}
                 <ScrollView 
-                  className="max-h-[200px]" 
-                  showsVerticalScrollIndicator={true}
+                  className="max-h-[300px]" 
+                  showsVerticalScrollIndicator={false}
                   nestedScrollEnabled={true}
                 >
                   {trackData.pinnedLocations.map((pin, index) => (
                     <View 
                       key={index} 
-                      className="flex-row justify-between items-center py-3 border-b border-gray-100"
+                      className="mb-4 bg-gray-50 rounded-xl p-4 border border-gray-100"
                     >
-                      <View className="flex-1">
-                        <View className="flex-row items-center justify-between">
-                          <View className="flex-row items-center">
-                            <Text className="text-gray-800 font-pmedium">Pin {index + 1}</Text>
-                            <Text className="text-gray-500 ml-2 text-sm">
+                      <View className="flex-row justify-between items-start">
+                        <View className="flex-row items-center">
+                          <View className="bg-[#1e5aa0] h-8 w-8 rounded-full items-center justify-center">
+                            <Text className="text-white font-pbold">{index + 1}</Text>
+                          </View>
+                          <View className="ml-3">
+                            <Text className="text-gray-800 font-pbold text-lg">
+                              Pin {index + 1}
+                            </Text>
+                            <Text className="text-gray-500 text-sm">
                               {new Date(pin.timestamp).toLocaleTimeString()}
                             </Text>
                           </View>
-                          <TouchableOpacity
-                            onPress={() => handleEditLabel(index)}
-                            className="p-2"
-                          >
-                            <Ionicons name="pencil" size={20} color="#1e5aa0" />
-                          </TouchableOpacity>
                         </View>
-                        {pin.fishLabel && (
-                          <Text className="text-[#1e5aa0] text-sm mt-1 font-pmedium">
-                            🐟 {pin.fishLabel}
-                          </Text>
-                        )}
-                        {pin.currentCity && (
-                          <Text className="text-gray-500 text-sm mt-1">
-                            {pin.currentCity}
-                          </Text>
-                        )}
+                        <TouchableOpacity
+                          onPress={() => handleEditLabel(index)}
+                          className="bg-blue-100 p-2 rounded-full"
+                        >
+                          <Ionicons name="pencil" size={20} color="#1e5aa0" />
+                        </TouchableOpacity>
                       </View>
-                      {pin.temperature && (
-                        <View className="flex-row items-center bg-gray-50 px-3 py-1 rounded-full">
-                          <Ionicons name="thermometer" size={16} color="#666" />
-                          <Text className="ml-1 text-gray-800 font-pbold">
-                            {pin.temperature}°C
+
+                      {/* Fish Label */}
+                      {pin.fishLabel && (
+                        <View className="mt-3 flex-row items-center bg-blue-50 p-2 rounded-lg">
+                          <Ionicons name="fish" size={20} color="#1e5aa0" />
+                          <Text className="ml-2 text-[#1e5aa0] font-pmedium">
+                            {pin.fishLabel}
                           </Text>
                         </View>
                       )}
+
+                      {/* Location and Temperature */}
+                      <View className="mt-3 flex-row justify-between items-center">
+                        {pin.currentCity && (
+                          <View className="flex-row items-center flex-1 mr-2">
+                            <Ionicons name="navigate" size={16} color="#666" />
+                            <Text className="ml-2 text-gray-600 text-sm flex-wrap">
+                              {pin.currentCity}
+                            </Text>
+                          </View>
+                        )}
+                        {pin.temperature && (
+                          <View className="flex-row items-center bg-white px-3 py-2 rounded-lg border border-gray-200">
+                            <Ionicons name="thermometer" size={16} color="#1e5aa0" />
+                            <Text className="ml-1 text-gray-800 font-pbold">
+                              {pin.temperature}°C
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                   ))}
                 </ScrollView>

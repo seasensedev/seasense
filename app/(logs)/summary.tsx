@@ -94,20 +94,23 @@ export default function Summary() {
           }
         });
 
-        const validTemps = tracks.filter(track => track.temperature && track.temperature > 0);
-        const totalTemp = validTemps.reduce((sum, track) => sum + (track.temperature || 0), 0);
-        const totalTime = tracks.reduce((sum, track) => sum + (track.elapsedTime || 0), 0);
-        const maxTemp = Math.max(...validTemps.map(track => track.temperature || 0));
-        const minTemp = Math.min(...validTemps.map(track => track.temperature || 0));
-        const totalPins = tracks.reduce((sum, track) => sum + (track.pinnedLocations?.length || 0), 0);
+        // Only calculate analytics if there are tracks
+        if (tracks.length > 0) {
+          const validTemps = tracks.filter(track => track.temperature && track.temperature > 0);
+          const totalTemp = validTemps.reduce((sum, track) => sum + (track.temperature || 0), 0);
+          const totalTime = tracks.reduce((sum, track) => sum + (track.elapsedTime || 0), 0);
+          const maxTemp = Math.max(...validTemps.map(track => track.temperature || 0));
+          const minTemp = Math.min(...validTemps.map(track => track.temperature || 0));
+          const totalPins = tracks.reduce((sum, track) => sum + (track.pinnedLocations?.length || 0), 0);
 
-        setAnalytics({
-          averageTemp: validTemps.length > 0 ? totalTemp / validTemps.length : 0,
-          totalTime,
-          maxTemp,
-          minTemp: minTemp === Infinity ? 0 : minTemp,
-          totalPins,
-        });
+          setAnalytics({
+            averageTemp: validTemps.length > 0 ? totalTemp / validTemps.length : 0,
+            totalTime,
+            maxTemp,
+            minTemp: minTemp === Infinity ? 0 : minTemp,
+            totalPins,
+          });
+        }
 
         setTrackingData(tracks);
       } catch (error) {
@@ -171,6 +174,18 @@ export default function Summary() {
     return (
       <SafeAreaView className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#1e5aa0" />
+      </SafeAreaView>
+    );
+  }
+
+  // Add this check for empty tracking data
+  if (trackingData.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center bg-white">
+        <Ionicons name="analytics-outline" size={48} color="#666" />
+        <Text className="text-gray-600 mt-4 text-center px-4">
+          No tracking data available yet. Start tracking to see your summaries.
+        </Text>
       </SafeAreaView>
     );
   }
@@ -252,70 +267,82 @@ export default function Summary() {
             {/* Temperature Line Chart */}
             <View className="bg-white rounded-lg p-4 shadow-sm mb-6">
               <Text className="font-pbold text-[#1e5aa0] mb-4">Temperature Trends</Text>
-              <LineChart
-                data={{
-                  labels: trackingData.map(track => track.timestamp.date.slice(-5)),
-                  datasets: [{
-                    data: trackingData.map(track => track.temperature || 0)
-                  }]
-                }}
-                width={Dimensions.get("window").width - 48}
-                height={200}
-                chartConfig={{
-                  backgroundColor: "#ffffff",
-                  backgroundGradientFrom: "#ffffff",
-                  backgroundGradientTo: "#ffffff",
-                  decimalPlaces: 1,
-                  color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  propsForDots: {
-                    r: "4",
-                    strokeWidth: "2",
-                    stroke: "#1e5aa0"
-                  },
-                  propsForLabels: {
-                    fontSize: 12
-                  }
-                }}
-                bezier
-                style={{
-                  marginVertical: 8,
-                  borderRadius: 16
-                }}
-              />
+              {trackingData.length > 0 ? (
+                <LineChart
+                  data={{
+                    labels: trackingData.map(track => track.timestamp.date.slice(-5)),
+                    datasets: [{
+                      data: trackingData.map(track => track.temperature || 0).length > 0 
+                        ? trackingData.map(track => track.temperature || 0)
+                        : [0] // Provide default data point if no temperatures
+                    }]
+                  }}
+                  width={Dimensions.get("window").width - 48}
+                  height={200}
+                  chartConfig={{
+                    backgroundColor: "#ffffff",
+                    backgroundGradientFrom: "#ffffff",
+                    backgroundGradientTo: "#ffffff",
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    propsForDots: {
+                      r: "4",
+                      strokeWidth: "2",
+                      stroke: "#1e5aa0"
+                    },
+                    propsForLabels: {
+                      fontSize: 12
+                    }
+                  }}
+                  bezier
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                  }}
+                />
+              ) : (
+                <Text className="text-gray-500 text-center">No temperature data available</Text>
+              )}
             </View>
 
             {/* Time Spent Bar Chart */}
             <View className="bg-white rounded-lg p-4 shadow-sm mb-6">
               <Text className="font-pbold text-[#1e5aa0] mb-4">Time Spent Per Track</Text>
-              <BarChart
-                data={{
-                  labels: trackingData.map((_, index) => `T${index + 1}`),
-                  datasets: [{
-                    data: trackingData.map(track => (track.elapsedTime || 0) / 60) 
-                  }]
-                }}
-                width={Dimensions.get("window").width - 48}
-                height={200}
-                chartConfig={{
-                  backgroundColor: "#ffffff",
-                  backgroundGradientFrom: "#ffffff",
-                  backgroundGradientTo: "#ffffff",
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  propsForLabels: {
-                    fontSize: 12
-                  }
-                }}
-                yAxisLabel=""
-                yAxisSuffix="m"
-                style={{
-                  marginVertical: 8,
-                  borderRadius: 16
-                }}
-                verticalLabelRotation={0}
-              />
+              {trackingData.length > 0 ? (
+                <BarChart
+                  data={{
+                    labels: trackingData.map((_, index) => `T${index + 1}`),
+                    datasets: [{
+                      data: trackingData.map(track => (track.elapsedTime || 0) / 60).length > 0
+                        ? trackingData.map(track => (track.elapsedTime || 0) / 60)
+                        : [0] // Provide default data point if no time data
+                    }]
+                  }}
+                  width={Dimensions.get("window").width - 48}
+                  height={200}
+                  chartConfig={{
+                    backgroundColor: "#ffffff",
+                    backgroundGradientFrom: "#ffffff",
+                    backgroundGradientTo: "#ffffff",
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    propsForLabels: {
+                      fontSize: 12
+                    }
+                  }}
+                  yAxisLabel=""
+                  yAxisSuffix="m"
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                  }}
+                  verticalLabelRotation={0}
+                />
+              ) : (
+                <Text className="text-gray-500 text-center">No time data available</Text>
+              )}
             </View>
           </View>
         </ScrollView>
