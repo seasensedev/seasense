@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
-import { doc, getDoc, deleteDoc, addDoc, collection } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, addDoc, collection, updateDoc } from "firebase/firestore";
 import { db, auth } from "../../config/firebaseConfig"; 
 import { useRouter } from "expo-router"; 
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
+import { getFirestore } from 'firebase/firestore';
 
 const RecentTrack = () => {
   const params = useLocalSearchParams();
@@ -54,6 +55,8 @@ const RecentTrack = () => {
         country: string | null;
       };
       currentCity?: string | null;
+      temperature?: number; // Add temperature to pinned location
+      fishLabel?: string; // Add this new property
     }>;
     weather?: {
       temperature: number;
@@ -68,6 +71,11 @@ const RecentTrack = () => {
   const { currentTheme } = useMapTheme();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isLabelModalVisible, setIsLabelModalVisible] = useState(false);
+  const [selectedPinIndex, setSelectedPinIndex] = useState<number | null>(null);
+  const [fishLabel, setFishLabel] = useState("");
 
   useEffect(() => {
     const fetchTrackDetails = async () => {
@@ -180,16 +188,19 @@ const RecentTrack = () => {
   };
 
   const handleArchive = async (trackData: any) => {
-    setIsArchiving(true);
     try {
-      // Add to archive collection
+      setIsSaving(true);
+      const db = getFirestore();
+  
       await addDoc(collection(db, 'archived_tracks'), {
         ...trackData,
         archivedAt: new Date().toISOString(),
+        isHidden: false,
+        isArchived: true,
         originalId: params.trackId,
+        lastModified: new Date().toISOString()
       });
-
-      // Delete from tracking_data
+  
       await deleteDoc(doc(db, "tracking_data", params.trackId as string));
       
       Alert.alert(
@@ -201,14 +212,14 @@ const RecentTrack = () => {
       console.error("Error archiving track:", error);
       Alert.alert("Error", "Failed to archive track");
     } finally {
-      setIsArchiving(false);
+      setIsSaving(false);
     }
   };
-
+  
   const handleDeletePress = () => {
     Alert.alert(
-      "Delete Track",
-      "What would you like to do with this track?",
+      "Archive Track",
+      "Are you sure you want to archive this track?",
       [
         {
           text: "Cancel",
@@ -217,32 +228,57 @@ const RecentTrack = () => {
         {
           text: "Archive",
           onPress: () => handleArchive(trackData)
-        },
-        {
-          text: "Delete Permanently",
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Confirm Delete",
-              "This action cannot be undone. Are you sure?",
-              [
-                {
-                  text: "Cancel",
-                  style: "cancel"
-                },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: handleDeleteDocument
-                }
-              ]
-            );
-          }
         }
       ]
     );
   };
 
+  const handleEditLabel = (index: number) => {
+    setSelectedPinIndex(index);
+    setFishLabel(trackData?.pinnedLocations?.[index]?.fishLabel || "");
+    setIsLabelModalVisible(true);
+  };
+
+  const showAlert = (message: string) => {
+    Alert.alert(
+      "Notification",
+      message,
+      [{ text: "OK", style: "default" }]
+    );
+  };
+
+  const handleSaveLabel = async () => {
+    if (selectedPinIndex === null) return;
+
+    try {
+      const updatedPinnedLocations = [...(trackData?.pinnedLocations || [])];
+      updatedPinnedLocations[selectedPinIndex] = {
+        ...updatedPinnedLocations[selectedPinIndex],
+        fishLabel: fishLabel
+      };
+
+      // Update in Firestore
+      await updateDoc(doc(db, "tracking_data", params.trackId as string), {
+        pinnedLocations: updatedPinnedLocations
+      });
+
+      // Update local state
+      setTrackData(prev => prev ? {
+        ...prev,
+        pinnedLocations: updatedPinnedLocations
+      } : null);
+
+      setIsLabelModalVisible(false);
+      setSelectedPinIndex(null);
+      setFishLabel("");
+      
+      showAlert("Fish label saved successfully!");
+    } catch (error) {
+      console.error("Error saving fish label:", error);
+      showAlert("Failed to save fish label");
+    }
+  };
+  
   return (
     <SafeAreaView className="flex-1">
       <ScrollView className="flex-1 bg-gray-100">
@@ -275,8 +311,15 @@ const RecentTrack = () => {
                 title={`Pin ${index + 1}`}
                 description={`${new Date(pin.timestamp).toLocaleString()}`}
               >
-                <View className="bg-white p-1 rounded-full border-2 border-[#1e5aa0]">
-                  <Ionicons name="location" size={20} color="#1e5aa0" />
+                <View className="items-center">
+                  <View className="bg-white p-2 rounded-full border-2 border-[#1e5aa0] items-center justify-center">
+                    <Ionicons name="location" size={20} color="#1e5aa0" />
+                    <View className="absolute -top-2 -right-2 bg-[#1e5aa0] rounded-full w-5 h-5 items-center justify-center">
+                      <Text className="text-white text-xs font-pbold">
+                        {index + 1}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </Marker>
             ))}
@@ -398,14 +441,62 @@ const RecentTrack = () => {
 
             {/* Add Pins Count Card if there are pins */}
             {trackData.pinnedLocations && trackData.pinnedLocations.length > 0 && (
-              <View className="bg-white p-4 rounded-xl shadow-sm w-[48%] mb-4">
+              <View className="bg-white p-4 rounded-xl shadow-sm w-full mb-4">
                 <View className="flex-row items-center mb-2">
                   <Ionicons name="location" size={24} color="#1e5aa0" />
-                  <Text className="ml-2 text-gray-500 font-pmedium">Pins</Text>
+                  <Text className="ml-2 text-gray-500 font-pmedium">
+                    Pinned Locations ({trackData.pinnedLocations.length})
+                  </Text>
                 </View>
-                <Text className="text-gray-800 font-pbold">
-                  {trackData.pinnedLocations.length}
-                </Text>
+                
+                {/* Add ScrollView with max height */}
+                <ScrollView 
+                  className="max-h-[200px]" 
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  {trackData.pinnedLocations.map((pin, index) => (
+                    <View 
+                      key={index} 
+                      className="flex-row justify-between items-center py-3 border-b border-gray-100"
+                    >
+                      <View className="flex-1">
+                        <View className="flex-row items-center justify-between">
+                          <View className="flex-row items-center">
+                            <Text className="text-gray-800 font-pmedium">Pin {index + 1}</Text>
+                            <Text className="text-gray-500 ml-2 text-sm">
+                              {new Date(pin.timestamp).toLocaleTimeString()}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleEditLabel(index)}
+                            className="p-2"
+                          >
+                            <Ionicons name="pencil" size={20} color="#1e5aa0" />
+                          </TouchableOpacity>
+                        </View>
+                        {pin.fishLabel && (
+                          <Text className="text-[#1e5aa0] text-sm mt-1 font-pmedium">
+                            🐟 {pin.fishLabel}
+                          </Text>
+                        )}
+                        {pin.currentCity && (
+                          <Text className="text-gray-500 text-sm mt-1">
+                            {pin.currentCity}
+                          </Text>
+                        )}
+                      </View>
+                      {pin.temperature && (
+                        <View className="flex-row items-center bg-gray-50 px-3 py-1 rounded-full">
+                          <Ionicons name="thermometer" size={16} color="#666" />
+                          <Text className="ml-1 text-gray-800 font-pbold">
+                            {pin.temperature}°C
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
               </View>
             )}
           </View>
@@ -453,13 +544,14 @@ const RecentTrack = () => {
               <ActivityIndicator size="large" color="#dc2626" />
             ) : (
               <TouchableOpacity
-                className="bg-red-600 rounded-full py-3 items-center mb-2"
+                className="bg-white border border-red-600 rounded-full py-3 items-center mb-2"
                 onPress={handleDeletePress}
+                disabled={isSaving || isDeleting}
               >
                 <View className="flex-row items-center space-x-3">
-                  <Ionicons name="trash-outline" size={24} color="white" />
-                  <Text className="text-white text-lg font-psemibold">
-                    Delete Track
+                  <Ionicons name="archive-outline" size={24} color="#dc2626" />
+                  <Text className="text-red-600 text-lg font-psemibold">
+                    {isSaving ? "Archiving..." : "Archive Track"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -467,6 +559,39 @@ const RecentTrack = () => {
           </View>
         </View>
       </ScrollView>
+      <Modal
+        visible={isLabelModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLabelModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white p-6 rounded-2xl w-[90%] max-w-[400px]">
+            <Text className="text-xl font-pbold mb-4">Add Fish Label</Text>
+            <TextInput
+              value={fishLabel}
+              onChangeText={setFishLabel}
+              placeholder="Enter fish name or label"
+              className="border border-gray-300 rounded-lg p-3 mb-4"
+              autoFocus
+            />
+            <View className="flex-row justify-end space-x-3">
+              <TouchableOpacity
+                onPress={() => setIsLabelModalVisible(false)}
+                className="px-4 py-2"
+              >
+                <Text className="text-gray-600 font-pmedium">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveLabel}
+                className="bg-[#1e5aa0] px-4 py-2 rounded-lg"
+              >
+                <Text className="text-white font-pmedium">Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
