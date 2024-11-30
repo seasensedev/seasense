@@ -94,7 +94,6 @@ export default function Summary() {
           }
         });
 
-        // Only calculate analytics if there are tracks
         if (tracks.length > 0) {
           const validTemps = tracks.filter(track => track.temperature && track.temperature > 0);
           const totalTemp = validTemps.reduce((sum, track) => sum + (track.temperature || 0), 0);

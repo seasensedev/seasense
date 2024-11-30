@@ -74,14 +74,6 @@ const LocationHeader = ({ location }: { location: Location.LocationObject | null
 };
 
 const SSTMap = () => {
-  type SSTData = {
-    latitude: number;
-    longitude: number;
-    sst: number;
-    time: string;
-  };
-
-  const [sst_data, setSSTData] = useState<SSTData[]>([]);
   const [region, setRegion] = useState<Region>({
     latitude: 6.88,
     longitude: 125.64,
@@ -196,46 +188,9 @@ const SSTMap = () => {
     );
   };
 
-  const fetchData = async () => {
-    try{
-      const response = await fetch('https://firebasestorage.googleapis.com/v0/b/geomapper-d2b26.appspot.com/o/sea_surface_temperature%2Fdavao_sea_surface_temperature_sep_10_2024.geojson?alt=media&token=7e82526a-5ea0-448e-ba1d-5cc99084f813');
-      const geoJSONData = await response.json();
-
-      const sstDataArray: SSTData[] = geoJSONData.features.map((feature: any) => ({
-        latitude: feature.geometry.coordinates[1],
-        longitude: feature.geometry.coordinates[0],
-        sst: feature.properties.SST_data,
-      }));
-
-      setSSTData(sstDataArray);
-    }catch(e){
-      console.error('Error fetching GeoJSON data: ', e)
-    }
+  const handlePress = (event: MapPressEvent) => {
+    // Removed GeoJSON handling
   }
-
-  const handlePress = (event: MapPressEvent) =>{
-    const {coordinate} = event.nativeEvent;
-    
-    const foundData = sst_data.find(point => {
-      const distance = Math.sqrt(
-        Math.pow(point.latitude - coordinate.latitude, 2)+
-        Math.pow(point.longitude - coordinate.longitude, 2)
-      );
-      return distance < 0.01
-    });
-
-    if(foundData){
-      Alert.alert(
-        'SST Data',
-        `SST: ${foundData.sst} °C\nLocation: Lat: ${foundData.latitude}, Lon: ${foundData.longitude}`,
-        [{ text: 'OK' }]
-      );
-    }
-  }
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   useEffect(() => {
     (async () => {

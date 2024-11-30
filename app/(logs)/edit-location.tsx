@@ -182,7 +182,7 @@ const EditLocation = () => {
 
   return (
     <SafeAreaView className="bg-white flex-1">
-      <View className="mt-14">
+      <View className="mt-24">
         <View className="flex flex-row text-lg justify-center font-semibold text-black space-x-28">
           <Text className="text-lg font-psemibold text-black">
             Lat:{" "}

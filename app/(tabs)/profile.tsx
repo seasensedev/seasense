@@ -29,7 +29,6 @@ import { User } from "firebase/auth";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import FishingSpotList from "../../components/Profile/FishingSpotList";
 import TrackList from "../../components/Profile/TrackList";
-import { Ionicons } from '@expo/vector-icons';
 import ArchiveButton from "../../components/Buttons/ArchiveButton";
 
 interface FishingSpot {

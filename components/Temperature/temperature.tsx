@@ -50,10 +50,9 @@ const Temperature: React.FC<TemperatureDisplayProps> = ({ temperature }) => {
 
   const initializePredictor = async () => {
     try {
-      // Create training data from fish_data.json
       const trainingData = fishData.map(fish => ({
         fish,
-        caught: true // Assuming all fish in the dataset were caught
+        caught: true 
       }));
       
       await fishPredictor.trainModel(trainingData);
