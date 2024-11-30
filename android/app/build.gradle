@@ -2,6 +2,11 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+/**
+ * Define ProGuard configuration
+ */
+def enableProguardInReleaseBuilds = true
+
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 react {
@@ -22,7 +27,25 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0.3"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('my-upload-key.keystore')
+            storePassword System.getenv('MYAPP_UPLOAD_STORE_PASSWORD') ?: MYAPP_UPLOAD_STORE_PASSWORD
+            keyAlias System.getenv('MYAPP_UPLOAD_KEY_ALIAS') ?: MYAPP_UPLOAD_KEY_ALIAS
+            keyPassword System.getenv('MYAPP_UPLOAD_KEY_PASSWORD') ?: MYAPP_UPLOAD_KEY_PASSWORD
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
+        }
     }
 
     // Keep existing signingConfigs and buildTypes

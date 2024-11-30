@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "geomapper",
+    "name": "SeaSense",
     "slug": "geomapper",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "seasense",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/seasense-splash.png",
