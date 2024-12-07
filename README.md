@@ -46,6 +46,12 @@
 3. Provide a clear title and description for your pull request.
 4. Submit the pull request.
 
+## Authors
+
+### Contributors of the Research
+- Nicose John Soriano (Project Lead, Full-stack Developer)
+- Roland Melecio (Python Developer)
+- Cris Jhon Cantos (UI/UX Designer, Documenter)
 
 
 
