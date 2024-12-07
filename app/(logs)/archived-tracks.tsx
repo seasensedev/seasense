@@ -4,6 +4,7 @@ import { collection, query, getDocs, doc, deleteDoc, addDoc, where, updateDoc } 
 import { db, auth } from '../../config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { logTrackingData } from '../../utils/dataLogger';
 
 interface ArchivedTrack {
   id: string;
@@ -107,12 +108,31 @@ export default function ArchivedTracks() {
     try {
       const { id, archivedAt, ...trackData } = track;
       
-      await addDoc(collection(db, 'tracking_data'), {
+      // Create restored document
+      const restoredDoc = await addDoc(collection(db, 'tracking_data'), {
         ...trackData,
         userId: auth.currentUser.uid,
         restoredAt: new Date().toISOString(),
         restoredBy: auth.currentUser.uid,
         isRestored: true
+      });
+
+      // Log the restore action
+      await logTrackingData({
+        userId: auth.currentUser.uid,
+        action: 'restore',
+        timestamp: Date.now(),
+        trackId: track.id,
+        originalData: track,
+        details: {
+          location: {
+            city: track.location?.details?.city,
+            coordinates: track.routeCoordinates[0]
+          },
+          temperature: track.temperature,
+          elapsedTime: track.elapsedTime,
+          pinnedLocations: track.pinnedLocations?.length
+        }
       });
 
       await deleteDoc(doc(db, 'archived_tracks', track.id));

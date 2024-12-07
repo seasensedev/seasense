@@ -10,6 +10,8 @@ import { useRouter } from "expo-router";
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
 import { getFirestore } from 'firebase/firestore';
+import { fishData } from "../../models/fish_data";
+import { logTrackingData } from '../../utils/dataLogger';
 
 const RecentTrack = () => {
   const params = useLocalSearchParams();
@@ -55,8 +57,8 @@ const RecentTrack = () => {
         country: string | null;
       };
       currentCity?: string | null;
-      temperature?: number; // Add temperature to pinned location
-      fishLabel?: string; // Add this new property
+      temperature?: number;
+      fishLabel?: string; 
     }>;
     weather?: {
       temperature: number;
@@ -76,6 +78,7 @@ const RecentTrack = () => {
   const [isLabelModalVisible, setIsLabelModalVisible] = useState(false);
   const [selectedPinIndex, setSelectedPinIndex] = useState<number | null>(null);
   const [fishLabel, setFishLabel] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchTrackDetails = async () => {
@@ -177,6 +180,24 @@ const RecentTrack = () => {
   const handleDeleteDocument = async () => {
     try {
       setIsDeleting(true);
+      
+      await logTrackingData({
+        userId: auth.currentUser!.uid,
+        action: 'delete',
+        timestamp: Date.now(),
+        trackId: params.trackId as string,
+        originalData: trackData,
+        details: {
+          location: {
+            city: trackData?.location?.details?.city,
+            coordinates: trackData?.location?.coordinates
+          },
+          temperature: trackData?.temperature,
+          elapsedTime: trackData?.elapsedTime,
+          pinnedLocations: trackData?.pinnedLocations?.length
+        }
+      });
+
       await deleteDoc(doc(db, "tracking_data", params.trackId as string));
       router.back();
     } catch (error) {
@@ -191,8 +212,9 @@ const RecentTrack = () => {
     try {
       setIsSaving(true);
       const db = getFirestore();
-  
-      await addDoc(collection(db, 'archived_tracks'), {
+
+      // Create archive document
+      const archivedDoc = await addDoc(collection(db, 'archived_tracks'), {
         ...trackData,
         archivedAt: new Date().toISOString(),
         isHidden: false,
@@ -200,7 +222,26 @@ const RecentTrack = () => {
         originalId: params.trackId,
         lastModified: new Date().toISOString()
       });
-  
+
+      // Log the archive action
+      await logTrackingData({
+        userId: auth.currentUser!.uid,
+        action: 'archive',
+        timestamp: Date.now(),
+        trackId: params.trackId as string,
+        originalData: trackData,
+        details: {
+          location: {
+            city: trackData.location?.details?.city,
+            coordinates: trackData.location?.coordinates
+          },
+          temperature: trackData.temperature,
+          elapsedTime: trackData.elapsedTime,
+          pinnedLocations: trackData.pinnedLocations?.length
+        }
+      });
+
+      // Delete original document
       await deleteDoc(doc(db, "tracking_data", params.trackId as string));
       
       Alert.alert(
@@ -215,7 +256,7 @@ const RecentTrack = () => {
       setIsSaving(false);
     }
   };
-  
+
   const handleDeletePress = () => {
     Alert.alert(
       "Archive Track",
@@ -257,12 +298,10 @@ const RecentTrack = () => {
         fishLabel: fishLabel
       };
 
-      // Update in Firestore
       await updateDoc(doc(db, "tracking_data", params.trackId as string), {
         pinnedLocations: updatedPinnedLocations
       });
 
-      // Update local state
       setTrackData(prev => prev ? {
         ...prev,
         pinnedLocations: updatedPinnedLocations
@@ -277,6 +316,10 @@ const RecentTrack = () => {
       console.error("Error saving fish label:", error);
       showAlert("Failed to save fish label");
     }
+  };
+
+  const getFishNames = () => {
+    return fishData.map(fish => fish.fish_name);
   };
   
   return (
@@ -591,22 +634,69 @@ const RecentTrack = () => {
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white p-6 rounded-2xl w-[90%] max-w-[400px]">
             <Text className="text-xl font-pbold mb-4">Add Fish Label</Text>
+            
+            {/* Dropdown Button */}
+            <TouchableOpacity
+              onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="border border-gray-300 rounded-lg p-3 mb-2 flex-row justify-between items-center"
+            >
+              <Text>{fishLabel || "Select a fish"}</Text>
+              <Ionicons 
+                name={isDropdownOpen ? "chevron-up" : "chevron-down"} 
+                size={24} 
+                color="#666"
+              />
+            </TouchableOpacity>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <ScrollView 
+                className="max-h-[200px] border border-gray-200 rounded-lg mb-4"
+                showsVerticalScrollIndicator={true}
+              >
+                {getFishNames().map((fishName, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    className="p-3 border-b border-gray-100"
+                    onPress={() => {
+                      setFishLabel(fishName);
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    <Text className={`${
+                      fishLabel === fishName ? "text-[#1e5aa0] font-pmedium" : "text-gray-600"
+                    }`}>
+                      {fishName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Manual Input */}
             <TextInput
               value={fishLabel}
               onChangeText={setFishLabel}
-              placeholder="Enter fish name or label"
+              placeholder="Or type custom fish name"
               className="border border-gray-300 rounded-lg p-3 mb-4"
-              autoFocus
             />
+
+            {/* Action Buttons */}
             <View className="flex-row justify-end space-x-3">
               <TouchableOpacity
-                onPress={() => setIsLabelModalVisible(false)}
+                onPress={() => {
+                  setIsLabelModalVisible(false);
+                  setIsDropdownOpen(false);
+                }}
                 className="px-4 py-2"
               >
                 <Text className="text-gray-600 font-pmedium">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={handleSaveLabel}
+                onPress={() => {
+                  handleSaveLabel();
+                  setIsDropdownOpen(false);
+                }}
                 className="bg-[#1e5aa0] px-4 py-2 rounded-lg"
               >
                 <Text className="text-white font-pmedium">Save</Text>

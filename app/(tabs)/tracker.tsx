@@ -19,6 +19,8 @@ import { collection, addDoc } from "firebase/firestore";
 import { useMapTheme } from "../../context/MapThemeContext";
 import { mapThemes } from "../../constants/mapStyles";
 import { Ionicons } from "@expo/vector-icons";
+import { logTrackingData } from '../../utils/dataLogger';
+
 interface PinnedLocation {
   latitude: number;
   longitude: number;
@@ -33,6 +35,49 @@ interface PinnedLocation {
   };
   currentCity?: string | null;
   temperature?: number | null;
+  fishLabel?: string;
+  possibleFishes?: string[];
+}
+
+interface Track {
+  userId: string;
+  routeCoordinates: any[];
+  startTime: any;
+  elapsedTime: number;
+  speed: number | null;
+  timestamp: any;
+  location: {
+    coordinates: {
+      latitude: number | undefined;
+      longitude: number | undefined;
+    };
+    details: any;
+    currentCity: string | null;
+  };
+  temperature: number | null;
+  pinnedLocations: PinnedLocation[];
+  weather?: {
+    temperature: number;
+    precipitation: number;
+    weatherCode: number;
+    windSpeed: number;
+    windDirection: number;
+  };
+}
+
+interface SessionData {
+  sessionId: string;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  coordinates: {
+    start: { latitude: number; longitude: number };
+    end: { latitude: number; longitude: number };
+  };
+  pinCount: number;
+  weather: any;
+  temperature: number | null;
+  userId: string;
 }
 
 export const TrackingMap = () => {
@@ -162,45 +207,100 @@ export const TrackingMap = () => {
         showToast("Please login to save tracking data");
         return null;
       }
+  
+      if (!location) {
+        showToast("No location data available");
+        return null;
+      }
+  
+      // Add console.log for debugging
+      console.log("Starting to save tracking data...");
       
-      const { latitude, longitude } = location || {};
-      const weatherResponse = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m`
-      );
-      const weatherData = await weatherResponse.json();
-
-      const formattedStartTime = startTime ? formatDateTime(startTime) : null;
-
-      const docRef = await addDoc(collection(db, "tracking_data"), {
+      const { latitude, longitude } = location;
+      const weatherData = await fetchWeatherData(latitude, longitude);
+  
+      // Create a proper timestamp object
+      const currentTime = new Date();
+      const timestamp = {
+        date: currentTime.toLocaleDateString(),
+        time: currentTime.toLocaleTimeString(),
+        timestamp: currentTime.getTime()
+      };
+  
+      // Structure the track data properly
+      const trackData = {
         userId: auth.currentUser.uid,
-        routeCoordinates,
-        startTime: formattedStartTime,
-        elapsedTime,
-        speed,
-        timestamp: formatDateTime(Date.now()),
+        routeCoordinates: routeCoordinates,
+        elapsedTime: elapsedTime,
+        speed: speed,
+        timestamp: timestamp,
         location: {
           coordinates: {
-            latitude: location?.latitude,
-            longitude: location?.longitude,
+            latitude: location.latitude,
+            longitude: location.longitude,
           },
           details: locationDetails,
           currentCity: currentCity,
         },
         temperature: temperature,
         pinnedLocations: pinnedLocations,
-        weather: {
-          temperature: weatherData.current.temperature_2m,
-          precipitation: weatherData.current.precipitation,
-          weatherCode: weatherData.current.weather_code,
-          windSpeed: weatherData.current.wind_speed_10m,
-          windDirection: weatherData.current.wind_direction_10m,
-        },
+        weather: weatherData,
+        createdAt: new Date().toISOString(),
+        isArchived: false,
+        isHidden: false
+      };
+  
+      console.log("Track data structured:", trackData); // Debug log
+  
+      // Save to tracking_data collection
+      const docRef = await addDoc(collection(db, "tracking_data"), trackData);
+      console.log("Document written with ID: ", docRef.id);
+  
+      // Also save to data_collection
+      await logTrackingData({
+        userId: auth.currentUser.uid,
+        action: 'create',
+        timestamp: Date.now(),
+        trackId: docRef.id,
+        originalData: trackData,
+        details: {
+          location: {
+            city: currentCity || undefined,
+            coordinates: {
+              latitude: location.latitude,
+              longitude: location.longitude,
+            }
+          },
+          temperature: temperature || undefined,
+          elapsedTime: elapsedTime,
+          pinnedLocations: pinnedLocations.length
+        }
       });
-
-      console.log("Tracking data saved to Firestore!");
+  
       return docRef.id;
     } catch (error) {
-      console.error("Error saving tracking data to Firestore: ", error);
+      console.error("Error saving tracking data:", error);
+      showToast("Failed to save tracking data");
+      return null;
+    }
+  };
+  
+  // Add helper function for weather data
+  const fetchWeatherData = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m`
+      );
+      const data = await response.json();
+      return {
+        temperature: data.current.temperature_2m,
+        precipitation: data.current.precipitation,
+        weatherCode: data.current.weather_code,
+        windSpeed: data.current.wind_speed_10m,
+        windDirection: data.current.wind_direction_10m,
+      };
+    } catch (error) {
+      console.error("Error fetching weather data:", error);
       return null;
     }
   };
@@ -253,15 +353,19 @@ export const TrackingMap = () => {
     } else {
       setIsSaving(true);
       showToast("Saving track...");
-
+  
       try {
         setIsTracking(false);
         if (watchPositionSubscription) {
           watchPositionSubscription.remove();
           setWatchPositionSubscription(null);
         }
+  
+        console.log("Stopping tracking and saving data..."); // Debug log
         const sessionId = await saveTrackingDataToFirestore();
+  
         if (sessionId) {
+          console.log("Track saved with ID:", sessionId); // Debug log
           setTrackingSessionId(sessionId);
           showToast("Track saved successfully!");
         } else {
@@ -273,8 +377,7 @@ export const TrackingMap = () => {
       } finally {
         setIsSaving(false);
         setIsLoading(false);
-
-        // Reset states after successful save
+        // Reset states
         setRouteCoordinates([]);
         setPinnedLocations([]);
         setElapsedTime(0);
@@ -291,6 +394,23 @@ export const TrackingMap = () => {
       setPinnedLocations((prev) =>
         prev.filter((pin) => pin.timestamp !== lastPinnedLocation.timestamp)
       );
+
+      // Log pin removal
+      await logTrackingData({
+        userId: auth.currentUser!.uid,
+        action: 'update',
+        timestamp: Date.now(),
+        trackId: trackingSessionId || 'pending',
+        details: {
+          location: {
+            city: lastPinnedLocation.currentCity || undefined,
+            coordinates: {
+              latitude: lastPinnedLocation.latitude,
+              longitude: lastPinnedLocation.longitude,
+            }
+          }
+        }
+      });
 
       setLastPinnedLocation(null);
       setShowUndo(false);
@@ -316,15 +436,13 @@ export const TrackingMap = () => {
       return;
     }
 
-    if (!location || isPinning) return;
+    if (!location || isPinning || !auth.currentUser) {
+      showToast(!auth.currentUser ? "Please login to save pins" : "Cannot pin location now");
+      return;
+    }
 
     try {
       setIsPinning(true);
-
-      if (!auth.currentUser) {
-        showToast("Please login to save pins");
-        return;
-      }
 
       const newPin = {
         latitude: location.latitude,
@@ -339,6 +457,27 @@ export const TrackingMap = () => {
       setPinnedLocations((prev) => [...prev, newPin]);
       setLastPinnedLocation(newPin);
       setShowUndo(true);
+
+      // Log pin creation
+      if (trackingSessionId) {
+        await logTrackingData({
+          userId: auth.currentUser.uid,
+          action: 'update',
+          timestamp: Date.now(),
+          trackId: trackingSessionId,
+          details: {
+            location: {
+              city: currentCity || undefined,
+              coordinates: {
+                latitude: location.latitude,
+                longitude: location.longitude,
+              }
+            },
+            temperature: temperature || undefined,
+          }
+        });
+      }
+
       showToast("Location pinned!");
 
       setTimeout(() => {
