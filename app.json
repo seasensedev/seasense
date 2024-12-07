@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SeaSense",
-    "slug": "geomapper",
+    "slug": "seasense",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -44,7 +44,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "e9257a25-c095-4dd5-926d-625ebe3eff80"
+        "projectId": "b2db3afc-28b1-4310-ac73-4016564ca509"
       }
     },
     "owner": "kaizenics"
