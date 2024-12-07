@@ -1,46 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, Image, TouchableOpacity, Animated, Easing } from "react-native";
-import { Tabs, useRouter } from "expo-router"; 
-import icons from "../../constants/icons";
+import { View, Text, TouchableOpacity, Animated, Easing } from "react-native";
+import { Tabs, useRouter } from "expo-router";
+import { Ionicons } from '@expo/vector-icons';
 
 const TabIcon = ({
-  icon,
-  color,
   name,
+  color,
+  label,
   focused,
 }: {
-  icon: any;
+  name: keyof typeof Ionicons.glyphMap;
   color: string;
-  name: string;
+  label: string;
   focused: boolean;
 }) => {
   return (
     <View className="items-center justify-center gap-1">
-      <Image
-        source={icon}
-        resizeMode="contain"
-        style={{ tintColor: color }}
-        className="w-6 h-6"
+      <Ionicons
+        name={name}
+        size={24}
+        color={color}
       />
       <Text
         className={`${focused ? "font-semibold" : "font-regular"} text-xs`}
         style={{ color: color }}
       >
-        {name}
+        {label}
       </Text>
     </View>
   );
 };
 
-const HeaderIcon = ({ icon, onPress }: { icon: any; onPress: () => void }) => {
+const HeaderIcon = ({ onPress }: { onPress: () => void }) => {
   return (
-    <TouchableOpacity onPress={onPress}>
-      <Image
-        source={icon}
-        resizeMode="contain"
-        className="w-7 h-7 ml-4"
-        style={{ tintColor: "black" }}
-      />
+    <TouchableOpacity onPress={onPress} className="ml-4">
+      <Ionicons name="menu" size={28} color="black" />
     </TouchableOpacity>
   );
 };
@@ -142,14 +136,14 @@ const TabsLayout = () => {
           headerLeft: () => (
             <>
               <DropdownMenu visible={isDropdownVisible} />
-              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+              <HeaderIcon onPress={toggleDropdown} />
             </>
           ),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={icons.home}
+              name={focused ? "home" : "home-outline"}
               color={color}
-              name="Home"
+              label="Home"
               focused={focused}
             />
           ),
@@ -163,14 +157,14 @@ const TabsLayout = () => {
           headerLeft: () => (
             <>
               <DropdownMenu visible={isDropdownVisible} />
-              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+              <HeaderIcon onPress={toggleDropdown} />
             </>
           ),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={icons.map}
+              name={focused ? "map" : "map-outline"}
               color={color}
-              name="SST Map"
+              label="SST Map"
               focused={focused}
             />
           ),
@@ -184,14 +178,14 @@ const TabsLayout = () => {
           headerLeft: () => (
             <>
               <DropdownMenu visible={isDropdownVisible} />
-              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+              <HeaderIcon onPress={toggleDropdown} />
             </>
           ),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={icons.radar}
+              name={focused ? "radio" : "radio-outline"}
               color={color}
-              name="Tracker"
+              label="Tracker"
               focused={focused}
             />
           ),
@@ -205,24 +199,20 @@ const TabsLayout = () => {
           headerLeft: () => (
             <>
               <DropdownMenu visible={isDropdownVisible} />
-              <HeaderIcon icon={icons.menu} onPress={toggleDropdown} />
+              <HeaderIcon onPress={toggleDropdown} />
             </>
           ),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={icons.profile}
+              name={focused ? "person" : "person-outline"}
               color={color}
-              name="Profile"
+              label="Profile"
               focused={focused}
             />
           ),
         }}
       />
-
-   
-      
     </Tabs>
-    
   );
 };
 
