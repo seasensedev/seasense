@@ -2,8 +2,19 @@ import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import NetInfo from '@react-native-community/netinfo';
-import { Alert } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import { MapThemeProvider } from '../context/MapThemeContext';
+import { LocationProvider } from '../context/LocationContext';
+import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Something went wrong:</Text>
+      <Text>{error.message}</Text>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, error] = useFonts({
@@ -23,7 +34,6 @@ export default function RootLayout() {
     if (error) throw error;
     if (fontsLoaded) SplashScreen.hideAsync();
 
-    // Internet connection monitoring
     const unsubscribe = NetInfo.addEventListener(state => {
       if (!state.isConnected) {
         Alert.alert(
@@ -41,16 +51,19 @@ export default function RootLayout() {
   if (!fontsLoaded && !error) return null;
 
   return (
-    <MapThemeProvider>
-      <Stack screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-      }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      </Stack>
-    </MapThemeProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <LocationProvider>
+        <MapThemeProvider>
+          <Stack screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+          </Stack>
+        </MapThemeProvider>
+      </LocationProvider>
+    </ErrorBoundary>
   );
 }

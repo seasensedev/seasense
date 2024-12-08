@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl, Alert, TouchableOpacity } from "react-native";
+import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl, Alert, TouchableOpacity, InteractionManager, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from 'expo-location';
 import { LocationObject } from 'expo-location';
@@ -9,7 +9,6 @@ import HourlyWavePeriod from "../../components/HourlyWavePeriod";
 import icons from "../../constants/icons";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import Skeleton from "../../components/Skeleton";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -71,61 +70,59 @@ const Home = () => {
   };
 
   const getWeatherData = async () => {
+    let abortController = new AbortController();
+    
     try {
       const location = await getLocation();
-      if (!location) return;
+      if (!location || abortController.signal.aborted) return;
 
       const { latitude, longitude } = location.coords;
 
-      const weatherResponse = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&daily=weather_code,temperature_2m_max,wind_speed_10m_max,wind_direction_10m_dominant`
-      );
-      const weatherData = await weatherResponse.json();
+      const [weatherResponse, marineResponse] = await Promise.all([
+        fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&daily=weather_code,temperature_2m_max,wind_speed_10m_max,wind_direction_10m_dominant`,
+          { signal: abortController.signal }
+        ),
+        fetch(
+          `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period&daily=&timezone=Asia%2FSingapore`,
+          { signal: abortController.signal }
+        )
+      ]);
 
-      const marineResponse = await fetch(
-        `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period&daily=&timezone=Asia%2FSingapore`
-      );
-      const marineData = await marineResponse.json();
+      if (abortController.signal.aborted) return;
 
-      const {
-        temperature_2m,
-        wind_speed_10m,
-        wind_direction_10m,
-        weather_code,
-      } = weatherData.current;
+      const [weatherData, marineData] = await Promise.all([
+        weatherResponse.json(),
+        marineResponse.json()
+      ]);
 
-      const heights = marineData.hourly.wave_height;
-      const directions = marineData.hourly.wave_direction;
-      const periods = marineData.hourly.wave_period;
-      const times = marineData.hourly.time;
-      const temperatures = weatherData.daily.temperature_2m_max;
-      const dailyWeatherCodes = weatherData.daily.weather_code;
-      const dailyWindSpeeds = weatherData.daily.wind_speed_10m_max || [];
-      const dailyWindDirections =
-        weatherData.daily.wind_direction_10m_dominant || [];
-
+      // Batch state updates
+      InteractionManager.runAfterInteractions(() => {
+        setTemperature(weatherData.current.temperature_2m);
+        setWindSpeed(weatherData.current.wind_speed_10m);
+        setWindDirection(weatherData.current.wind_direction_10m);
+        setWeatherCodes(weatherData.daily.weather_code);
+        setHourlyWaveHeights(marineData.hourly.wave_height);
+        setHourlyWaveDirections(marineData.hourly.wave_direction);
+        setHourlyWavePeriods(marineData.hourly.wave_period);
+        setHourlyLabels(getNextHours());
+        setDailyTemperatures(weatherData.daily.temperature_2m_max);
+        setDailyWindSpeeds(weatherData.daily.wind_speed_10m_max?.slice(0, 4) || []);
+        setDailyWindDirections(weatherData.daily.wind_direction_10m_dominant?.slice(0, 4) || []);
         
-      setTemperature(temperature_2m);
-      setWindSpeed(wind_speed_10m);
-      setWindDirection(wind_direction_10m);
-      setWeatherCodes(dailyWeatherCodes);
-      setHourlyWaveHeights(heights);
-      setHourlyWaveDirections(directions);
-      setHourlyWavePeriods(periods);
-      setHourlyLabels(getNextHours());
-      setDailyTemperatures(temperatures);
-      setDailyWindSpeeds(dailyWindSpeeds.slice(0, 4));
-      setDailyWindDirections(dailyWindDirections.slice(0, 4));
+        setLoading(false);
+        setRefreshing(false);
+      });
 
-      setLoading(false);
-      setRefreshing(false);
-      
-      checkWeatherConditions();
-    } catch (error) {
-      setLoading(false);
-      setRefreshing(false);
-      console.error(error);
+    } catch (error: any) {
+      if (!abortController.signal.aborted) {
+        console.warn('Weather data fetch error:', error);
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
+
+    return () => abortController.abort();
   };
 
   const checkWeatherConditions = () => {
@@ -136,18 +133,24 @@ const Home = () => {
 
   useEffect(() => {
     let isMounted = true;
-  
-    const setup = async () => {
-      if (isMounted) {
-        await getUserData();
-        await getWeatherData();
+    let cleanup: (() => void) | undefined;
+
+    const initialize = async () => {
+      try {
+        if (isMounted) {
+          await getUserData();
+          cleanup = await getWeatherData();
+        }
+      } catch (error) {
+        console.warn('Initialization error:', error);
       }
     };
-  
-    setup();
-  
+
+    initialize();
+
     return () => {
       isMounted = false;
+      cleanup?.();
     };
   }, []);
 
@@ -277,46 +280,34 @@ const Home = () => {
     return direction - 180;
   };
 
-  const WeatherCardSkeleton: React.FC = () => {
+  const WeatherLoadingSpinner: React.FC = () => {
     return (
-      <View className="flex flex-row justify-between">
-        <View className="flex-col justify-between">
-          <Skeleton width={120} height={24} style={{ marginBottom: 8 }} />
-          <Skeleton width={80} height={48} style={{ marginBottom: 8 }} />
-          <Skeleton width={40} height={24} style={{ marginBottom: 8 }} />
-          <Skeleton width={100} height={20} />
-        </View>
-        <View className="flex-row justify-between mt-2 space-x-3">
-          {[1, 2, 3, 4].map((_, index) => (
-            <View key={index} className="items-center">
-              <Skeleton width={30} height={20} style={{ marginBottom: 20 }} />
-              <Skeleton width={28} height={28} />
-              <Skeleton width={30} height={20} style={{ marginTop: 20 }} />
-            </View>
-          ))}
-        </View>
+      <View className="flex items-center justify-center py-8">
+        <ActivityIndicator size="large" color="#0e4483" />
       </View>
     );
   };
 
-  const WindCardSkeleton: React.FC = () => {
-    return (
-      <View className="flex-row items-center justify-between">
-        <View className="ml-2 mr-3">
-          <Skeleton width={48} height={48} />
-        </View>
-        <View className="flex-row mx-2">
-          {[1, 2, 3, 4].map((_, index) => (
-            <View key={index} className="flex-col items-center mx-4">
-              <Skeleton width={24} height={24} />
-              <Skeleton width={30} height={20} style={{ marginTop: 8 }} />
-              <Skeleton width={30} height={20} style={{ marginTop: 8 }} />
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
+  const memoizedWaveHeight = React.useMemo(() => (
+    <HourlyWaveHeight
+      hourlyWaveHeights={hourlyWaveHeights.slice(0, 6)}
+      hourlyLabels={nextHours}
+    />
+  ), [hourlyWaveHeights, nextHours]);
+
+  const memoizedWaveDirection = React.useMemo(() => (
+    <HourlyWaveDirection
+      hourlyWaveDirections={hourlyWaveDirections.slice(0, 6)}
+      hourlyLabels={nextHours}
+    />
+  ), [hourlyWaveDirections, nextHours]);
+
+  const memoizedWavePeriod = React.useMemo(() => (
+    <HourlyWavePeriod
+      hourlyWavePeriods={hourlyWavePeriods.slice(0, 6)}
+      hourlyLabels={nextHours}
+    />
+  ), [hourlyWavePeriods, nextHours]);
 
   return (
     <SafeAreaView className="bg-white flex-1">
@@ -354,7 +345,7 @@ const Home = () => {
             locations={[0, 1]}
             style={{ borderRadius: 10, padding: 16, marginTop: 24 }}
           >
-            {loading ? <WeatherCardSkeleton /> : (
+            {loading ? <WeatherLoadingSpinner /> : (
             <View className="flex flex-row justify-between">
               <View className="flex-col justify-between">
                 <Text className="text-white text-lg mb-2 font-medium">
@@ -415,7 +406,7 @@ const Home = () => {
             }}
           >
             <View className="flex justify-between">
-              {loading ? <WindCardSkeleton /> : (
+              {loading ? <WeatherLoadingSpinner /> : (
               <View className="flex-row items-center justify-between">
                 <View className="ml-2 mr-3">
                   <Image
@@ -487,12 +478,11 @@ const Home = () => {
               Wave Heights
             </Text>
             {loading ? (
-              <Skeleton width="100%" height={200} style={{ marginTop: 8 }} />
+              <View className="h-[200px] flex items-center justify-center">
+                <ActivityIndicator size="large" color="#0e4483" />
+              </View>
             ) : (
-              <HourlyWaveHeight
-                hourlyWaveHeights={hourlyWaveHeights.slice(0, 6)}
-                hourlyLabels={nextHours}
-              />
+              memoizedWaveHeight
             )}
           </View>
 
@@ -502,12 +492,11 @@ const Home = () => {
               Wave Directions
             </Text>
             {loading ? (
-              <Skeleton width="100%" height={200} style={{ marginTop: 8 }} />
+              <View className="h-[200px] flex items-center justify-center">
+                <ActivityIndicator size="large" color="#0e4483" />
+              </View>
             ) : (
-              <HourlyWaveDirection
-                hourlyWaveDirections={hourlyWaveDirections.slice(0, 6)}
-                hourlyLabels={nextHours}
-              />
+              memoizedWaveDirection
             )}
           </View>
 
@@ -517,12 +506,11 @@ const Home = () => {
               Wave Periods
             </Text>
             {loading ? (
-              <Skeleton width="100%" height={200} style={{ marginTop: 8 }} />
+              <View className="h-[200px] flex items-center justify-center">
+                <ActivityIndicator size="large" color="#0e4483" />
+              </View>
             ) : (
-              <HourlyWavePeriod
-                hourlyWavePeriods={hourlyWavePeriods.slice(0, 6)}
-                hourlyLabels={nextHours}
-              />
+              memoizedWavePeriod
             )}
           </View>
         </View>

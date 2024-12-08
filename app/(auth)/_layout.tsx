@@ -14,17 +14,6 @@ export default function AuthLayout() {
         }}
       />
       <Stack.Screen
-        name="credentials"
-        options={{
-          title: "Information",
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleStyle: { color: "#FFF" },
-          headerTintColor: "#FFF",
-          headerBackVisible: false,
-        }}
-      />
-      <Stack.Screen
         name="email-login"
         options={{
           title: "Log in with Email",

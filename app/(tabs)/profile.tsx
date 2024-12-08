@@ -128,7 +128,7 @@ const Profile = () => {
 
             // Fetch Tracks
         const trackQuery = query(
-          collection(getFirestore(), "tracks"), // Change "tracks" to your actual collection name
+          collection(getFirestore(), "tracks"), 
           where("userId", "==", currentUser.uid)
         );
         const trackSnapshot = await getDocs(trackQuery);
