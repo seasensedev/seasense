@@ -4,9 +4,10 @@
     "slug": "seasense",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/seasense-app-icon.png",
     "scheme": "seasense",
     "userInterfaceStyle": "automatic",
+    "jsEngine": "hermes",
     "splash": {
       "image": "./assets/images/seasense-splash.png",
       "resizeMode": "contain",
@@ -14,11 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.geomapper.map"
+      "bundleIdentifier": "com.seasense.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/seasense-foreground.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.geomapper.map",
