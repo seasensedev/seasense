@@ -49,8 +49,8 @@
 ## Authors
 
 ### Contributors of the Research
-- Nicose John Soriano (Project Lead, Full-stack Developer)
-- Roland Melecio (Python Developer)
+- Nicose John Soriano (Project Lead, Software Developer)
+- Roland Melecio (Software Developer)
 - Cris Jhon Cantos (UI/UX Designer, Documenter)
 
 
