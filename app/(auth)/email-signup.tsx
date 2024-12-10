@@ -6,42 +6,15 @@ import CustomButton from "../../components/Buttons/CustomButton";
 import { Picker } from "@react-native-picker/picker";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
-
-// Define the type for the locations data structure
-type LocationData = {
-  [region: string]: {
-    [province: string]: {
-      [city: string]: string[];
-    };
-  };
-};
-
-// Add Philippine locations data
-const philippineLocations: LocationData = {
-  "Region XI (Davao Region)": {
-    "Davao del Sur": {
-      "Davao City": [
-        "Poblacion District",
-        "Talomo District",
-        "Buhangin District",
-        "Toril District",
-        "Bunawan District",
-      ],
-    },
-    // ... other locations
-  },
-  // ... other regions
-};
+import { philippineLocations, LocationData } from "../../config/philippineLocations";
 
 const EmailSignup = () => {
-  // Auth states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // User info states
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
