@@ -177,7 +177,6 @@ export default function Summary() {
     );
   }
 
-  // Add this check for empty tracking data
   if (trackingData.length === 0) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-white">
@@ -273,7 +272,7 @@ export default function Summary() {
                     datasets: [{
                       data: trackingData.map(track => track.temperature || 0).length > 0 
                         ? trackingData.map(track => track.temperature || 0)
-                        : [0] // Provide default data point if no temperatures
+                        : [0] 
                     }]
                   }}
                   width={Dimensions.get("window").width - 48}
@@ -315,7 +314,7 @@ export default function Summary() {
                     datasets: [{
                       data: trackingData.map(track => (track.elapsedTime || 0) / 60).length > 0
                         ? trackingData.map(track => (track.elapsedTime || 0) / 60)
-                        : [0] // Provide default data point if no time data
+                        : [0] 
                     }]
                   }}
                   width={Dimensions.get("window").width - 48}

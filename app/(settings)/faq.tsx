@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, SafeAreaView, Image } from "react-native";
 import Collapsible from "react-native-collapsible";
-import icons from "../../constants/icons"; // Adjust path as needed
+import icons from "../../constants/icons"; 
 
 export default function FAQ() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);

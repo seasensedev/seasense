@@ -39,7 +39,6 @@ const FishingSpotList: React.FC<FishingSpotProps> = ({
   const renderSpotCard = (spot: FishingSpotProps['fishingSpots'][0], index: number) => {
     const formatTime = (timeString: string) => {
       try {
-        // Ensure the timeString is in HH:mm format
         const [hours, minutes] = timeString.split(':');
         const date = new Date();
         date.setHours(parseInt(hours, 10));

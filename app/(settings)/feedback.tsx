@@ -17,7 +17,6 @@ export default function Feedback() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    // Handle submission logic here
     Alert.alert('Success', 'Feedback submitted successfully');
     router.back();
   };

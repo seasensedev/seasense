@@ -132,14 +132,12 @@ const NavigateLocation = () => {
   }, [isPanning, pulseAnimation, opacityPulseAnimation, dotOpacityAnimation]);
 
   const handleRegionChange = (newRegion: any) => {
-    // Clear any existing timeout
     if (debounceTimeout.current) {
       clearTimeout(debounceTimeout.current);
     }
 
     setIsPanning(true);
 
-    // Set a new timeout
     debounceTimeout.current = setTimeout(() => {
       if (isMapReady) {
         setRegion(newRegion);
@@ -149,7 +147,7 @@ const NavigateLocation = () => {
         });
         setIsPanning(false);
       }
-    }, 100); // Debounce for 100ms
+    }, 100);
   };
 
   const handleRegionChangeComplete = (newRegion: any) => {

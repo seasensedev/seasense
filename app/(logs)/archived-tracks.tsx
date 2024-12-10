@@ -108,7 +108,6 @@ export default function ArchivedTracks() {
     try {
       const { id, archivedAt, ...trackData } = track;
       
-      // Create restored document
       const restoredDoc = await addDoc(collection(db, 'tracking_data'), {
         ...trackData,
         userId: auth.currentUser.uid,
@@ -117,7 +116,6 @@ export default function ArchivedTracks() {
         isRestored: true
       });
 
-      // Log the restore action
       await logTrackingData({
         userId: auth.currentUser.uid,
         action: 'restore',
@@ -160,14 +158,12 @@ export default function ArchivedTracks() {
     try {
       const trackRef = doc(db, 'archived_tracks', track.id);
       
-      // Update the document to mark it as hidden instead of deleting it
       await updateDoc(trackRef, {
         isHidden: true,
         hiddenAt: new Date().toISOString(),
         hiddenBy: auth.currentUser.uid
       });
 
-      // Refresh the tracks list
       await loadArchivedTracks();
       
       Alert.alert("Success", "Track removed from your archive");

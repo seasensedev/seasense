@@ -1,4 +1,3 @@
-// About.tsx
 import React from "react";
 import { View, Text, Image, SafeAreaView, TouchableOpacity, Linking, ScrollView } from "react-native";
 import icons from "../../constants/images";

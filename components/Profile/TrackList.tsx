@@ -1,4 +1,3 @@
-// TrackList.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native";
 import { useRouter } from "expo-router";

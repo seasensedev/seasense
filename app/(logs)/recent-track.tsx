@@ -213,7 +213,6 @@ const RecentTrack = () => {
       setIsSaving(true);
       const db = getFirestore();
 
-      // Create archive document
       const archivedDoc = await addDoc(collection(db, 'archived_tracks'), {
         ...trackData,
         archivedAt: new Date().toISOString(),
@@ -223,7 +222,6 @@ const RecentTrack = () => {
         lastModified: new Date().toISOString()
       });
 
-      // Log the archive action
       await logTrackingData({
         userId: auth.currentUser!.uid,
         action: 'archive',
@@ -241,7 +239,6 @@ const RecentTrack = () => {
         }
       });
 
-      // Delete original document
       await deleteDoc(doc(db, "tracking_data", params.trackId as string));
       
       Alert.alert(
