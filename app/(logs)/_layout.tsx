@@ -68,6 +68,16 @@ export default function LogsLayout() {
         }}
       />
        <Stack.Screen
+        name="fish-analysis"
+        options={{
+          title: "Analysis",
+          headerShown: true,
+          headerTransparent: false,
+          headerTitleStyle: { color: "black" },
+          headerTintColor: "black",
+        }}
+      />
+       <Stack.Screen
         name="archived-tracks"
         options={{
           title: "Archive",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
-import MapView, { Marker, UrlTile, Region, MapPressEvent } from 'react-native-maps';
+import MapView, { Marker, UrlTile, Region, MapPressEvent, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useMapTheme } from '../../context/MapThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -255,6 +255,7 @@ const SSTMap = () => {
   return (
     <View className="flex-1">
       <MapView
+        provider={PROVIDER_GOOGLE}
         mapType='hybrid'
         className="flex-1"
         initialRegion={region}

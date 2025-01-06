@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, ScrollView, Text, Image, RefreshControl, Alert, TouchableOpacity, InteractionManager, ActivityIndicator } from "react-native";
+import {
+  SafeAreaView,
+  View,
+  ScrollView,
+  Text,
+  Image,
+  RefreshControl,
+  Alert,
+  TouchableOpacity,
+  InteractionManager,
+  ActivityIndicator,
+  ImageBackground,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Location from 'expo-location';
-import { LocationObject } from 'expo-location';
+import * as Location from "expo-location";
+import { LocationObject } from "expo-location";
 import HourlyWaveHeight from "../../components/HourlyWaveHeight";
 import HourlyWaveDirection from "../../components/HourlyWaveDirection";
 import HourlyWavePeriod from "../../components/HourlyWavePeriod";
 import icons from "../../constants/icons";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const Home = () => {
   const [hourlyWaveHeights, setHourlyWaveHeights] = useState<number[]>([]);
-  const [hourlyWaveDirections, setHourlyWaveDirections] = useState<number[]>([]);
+  const [hourlyWaveDirections, setHourlyWaveDirections] = useState<number[]>(
+    []
+  );
   const [hourlyWavePeriods, setHourlyWavePeriods] = useState<number[]>([]);
   const [hourlyLabels, setHourlyLabels] = useState<string[]>([]);
   const [temperature, setTemperature] = useState<number | null>(null);
@@ -49,9 +63,12 @@ const Home = () => {
 
   const getLocation = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setErrorMsg('Permission to access location was denied');
-      Alert.alert("Permission denied", "Location permission is required to fetch the weather data.");
+    if (status !== "granted") {
+      setErrorMsg("Permission to access location was denied");
+      Alert.alert(
+        "Permission denied",
+        "Location permission is required to fetch the weather data."
+      );
       return;
     }
 
@@ -71,7 +88,7 @@ const Home = () => {
 
   const getWeatherData = async () => {
     let abortController = new AbortController();
-    
+
     try {
       const location = await getLocation();
       if (!location || abortController.signal.aborted) return;
@@ -86,14 +103,14 @@ const Home = () => {
         fetch(
           `https://marine-api.open-meteo.com/v1/marine?latitude=${latitude}&longitude=${longitude}&hourly=wave_height,wave_direction,wave_period&daily=&timezone=Asia%2FSingapore`,
           { signal: abortController.signal }
-        )
+        ),
       ]);
 
       if (abortController.signal.aborted) return;
 
       const [weatherData, marineData] = await Promise.all([
         weatherResponse.json(),
-        marineResponse.json()
+        marineResponse.json(),
       ]);
 
       // Batch state updates
@@ -107,16 +124,19 @@ const Home = () => {
         setHourlyWavePeriods(marineData.hourly.wave_period);
         setHourlyLabels(getNextHours());
         setDailyTemperatures(weatherData.daily.temperature_2m_max);
-        setDailyWindSpeeds(weatherData.daily.wind_speed_10m_max?.slice(0, 4) || []);
-        setDailyWindDirections(weatherData.daily.wind_direction_10m_dominant?.slice(0, 4) || []);
-        
+        setDailyWindSpeeds(
+          weatherData.daily.wind_speed_10m_max?.slice(0, 4) || []
+        );
+        setDailyWindDirections(
+          weatherData.daily.wind_direction_10m_dominant?.slice(0, 4) || []
+        );
+
         setLoading(false);
         setRefreshing(false);
       });
-
     } catch (error: any) {
       if (!abortController.signal.aborted) {
-        console.warn('Weather data fetch error:', error);
+        console.warn("Weather data fetch error:", error);
         setLoading(false);
         setRefreshing(false);
       }
@@ -142,7 +162,7 @@ const Home = () => {
           cleanup = await getWeatherData();
         }
       } catch (error) {
-        console.warn('Initialization error:', error);
+        console.warn("Initialization error:", error);
       }
     };
 
@@ -156,15 +176,22 @@ const Home = () => {
 
   useEffect(() => {
     let isMounted = true;
-  
+
     if (isMounted) {
       checkWeatherConditions();
     }
-  
+
     return () => {
       isMounted = false;
     };
-  }, [weatherCodes, temperature, hourlyWaveHeights, hourlyWaveDirections, hourlyWavePeriods, loading]);
+  }, [
+    weatherCodes,
+    temperature,
+    hourlyWaveHeights,
+    hourlyWaveDirections,
+    hourlyWavePeriods,
+    loading,
+  ]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -252,31 +279,29 @@ const Home = () => {
   const nextDays = getNextDays();
 
   const getNextHours = () => {
-  const currentHour = new Date();
+    const currentHour = new Date();
 
+    const options: Intl.DateTimeFormatOptions = {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Singapore",
+    };
 
-  const options: Intl.DateTimeFormatOptions = { 
-    hour: 'numeric', 
-    minute: '2-digit',
-    hour12: false, 
-    timeZone: 'Asia/Singapore' 
+    const formatter = new Intl.DateTimeFormat("en-US", options);
+
+    const hours = Array.from({ length: 6 }, (_, i) => {
+      const hour = new Date(currentHour.setMinutes(0, 0, 0));
+      hour.setHours(hour.getHours() - (5 - i));
+      return formatter.format(hour);
+    });
+
+    return hours;
   };
-
-  const formatter = new Intl.DateTimeFormat('en-US', options);
-
-  const hours = Array.from({ length: 6 }, (_, i) => {
-    const hour = new Date(currentHour.setMinutes(0, 0, 0)); 
-    hour.setHours(hour.getHours() - (5 - i)); 
-    return formatter.format(hour);
-  });
-
-  return hours;
-};
 
   const nextHours = getNextHours();
 
   const calculateRotation = (direction: number) => {
-
     return direction - 180;
   };
 
@@ -288,32 +313,43 @@ const Home = () => {
     );
   };
 
-  const memoizedWaveHeight = React.useMemo(() => (
-    <HourlyWaveHeight
-      hourlyWaveHeights={hourlyWaveHeights.slice(0, 6)}
-      hourlyLabels={nextHours}
-    />
-  ), [hourlyWaveHeights, nextHours]);
+  const memoizedWaveHeight = React.useMemo(
+    () => (
+      <HourlyWaveHeight
+        hourlyWaveHeights={hourlyWaveHeights.slice(0, 6)}
+        hourlyLabels={nextHours}
+      />
+    ),
+    [hourlyWaveHeights, nextHours]
+  );
 
-  const memoizedWaveDirection = React.useMemo(() => (
-    <HourlyWaveDirection
-      hourlyWaveDirections={hourlyWaveDirections.slice(0, 6)}
-      hourlyLabels={nextHours}
-    />
-  ), [hourlyWaveDirections, nextHours]);
+  const memoizedWaveDirection = React.useMemo(
+    () => (
+      <HourlyWaveDirection
+        hourlyWaveDirections={hourlyWaveDirections.slice(0, 6)}
+        hourlyLabels={nextHours}
+      />
+    ),
+    [hourlyWaveDirections, nextHours]
+  );
 
-  const memoizedWavePeriod = React.useMemo(() => (
-    <HourlyWavePeriod
-      hourlyWavePeriods={hourlyWavePeriods.slice(0, 6)}
-      hourlyLabels={nextHours}
-    />
-  ), [hourlyWavePeriods, nextHours]);
+  const memoizedWavePeriod = React.useMemo(
+    () => (
+      <HourlyWavePeriod
+        hourlyWavePeriods={hourlyWavePeriods.slice(0, 6)}
+        hourlyLabels={nextHours}
+      />
+    ),
+    [hourlyWavePeriods, nextHours]
+  );
 
   return (
     <SafeAreaView className="bg-white flex-1">
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View className="">
           <Text className="text-black text-2xl font-psemibold pt-4">
@@ -324,18 +360,20 @@ const Home = () => {
               ? "Loading..."
               : getCustomWeatherPhrase(getWeatherDescription(weatherCodes[0]))}
           </Text>
-            
-            <View className=" flex-row items-center pt-2">
-              <View className="flex flex-row rounded-full border border-[#0e4483] px-2 py-2">
+
+          <View className=" flex-row items-center pt-2">
+            <View className="flex flex-row rounded-full border border-[#0e4483] px-2 py-2">
               <Image
-              source={icons.location}
-              className="w-4 h-4 mr-1.5"
-              resizeMode="contain"
-              style={{ tintColor: "#0e4483" }}
+                source={icons.location}
+                className="w-4 h-4 mr-1.5"
+                resizeMode="contain"
+                style={{ tintColor: "#0e4483" }}
               />
-              <Text className="text-[#0e4483] text-sm font-regular">{locationAddress}</Text>
-              </View>
+              <Text className="text-[#0e4483] text-sm font-regular">
+                {locationAddress}
+              </Text>
             </View>
+          </View>
 
           {/* Weather Forecast */}
           <LinearGradient
@@ -345,48 +383,54 @@ const Home = () => {
             locations={[0, 1]}
             style={{ borderRadius: 10, padding: 16, marginTop: 24 }}
           >
-            {loading ? <WeatherLoadingSpinner /> : (
-            <View className="flex flex-row justify-between">
-              <View className="flex-col justify-between">
-                <Text className="text-white text-lg mb-2 font-medium">
-                  {loading
-                    ? "Loading..."
-                    : getWeatherDescription(weatherCodes[0])}
-                </Text>
-                <Text className="text-white text-5xl font-semibold">
-                  {loading
-                    ? "Loading..."
-                    : temperature !== null
-                    ? `${temperature}°`
-                    : "Data Unavailable"}
-                </Text>
-                <Text className="text-white text-lg font-semibold">
-                  {nextDays[0]}
-                </Text>
-                <Text className="text-white text-md mb-2 font-regular">
-                  {new Date().toLocaleDateString()}
-                </Text>
+            {loading ? (
+              <WeatherLoadingSpinner />
+            ) : (
+              <View className="flex flex-row justify-between">
+                <View className="flex-col justify-between">
+                  <Text className="text-white text-lg mb-2 font-medium">
+                    {loading
+                      ? "Loading..."
+                      : getWeatherDescription(weatherCodes[0])}
+                  </Text>
+                  <Text className="text-white text-5xl font-semibold">
+                    {loading
+                      ? "Loading..."
+                      : temperature !== null
+                      ? `${temperature}°`
+                      : "Data Unavailable"}
+                  </Text>
+                  <Text className="text-white text-lg font-semibold">
+                    {nextDays[0]}
+                  </Text>
+                  <Text className="text-white text-md mb-2 font-regular">
+                    {new Date().toLocaleDateString()}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between mt-2 space-x-3">
+                  {nextDays.slice(1).map((day, index) => (
+                    <View key={index} className="items-center">
+                      <Text className="text-white font-semibold mb-5">
+                        {day}
+                      </Text>
+                      <Image
+                        source={
+                          loading
+                            ? icons.cloud
+                            : getWeatherIcon(weatherCodes[index + 1])
+                        }
+                        className="w-7 h-7"
+                        resizeMode="contain"
+                      />
+                      <Text className="text-white text-md font-medium mt-5">
+                        {loading
+                          ? "Loading..."
+                          : `${dailyTemperatures[index]}°C`}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-              <View className="flex-row justify-between mt-2 space-x-3">
-                {nextDays.slice(1).map((day, index) => (
-                  <View key={index} className="items-center">
-                    <Text className="text-white font-semibold mb-5">{day}</Text>
-                    <Image
-                      source={
-                        loading
-                          ? icons.cloud
-                          : getWeatherIcon(weatherCodes[index + 1])
-                      }
-                      className="w-7 h-7"
-                      resizeMode="contain"
-                    />
-                    <Text className="text-white text-md font-medium mt-5">
-                      {loading ? "Loading..." : `${dailyTemperatures[index]}°C`}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
             )}
           </LinearGradient>
 
@@ -406,71 +450,127 @@ const Home = () => {
             }}
           >
             <View className="flex justify-between">
-              {loading ? <WeatherLoadingSpinner /> : (
-              <View className="flex-row items-center justify-between">
-                <View className="ml-2 mr-3">
-                  <Image
-                    source={icons.wind}
-                    className="w-12 h-12"
-                    resizeMode="contain"
-                    style={{ tintColor: "white" }}
-                  />
-                </View>
-                <View className="flex-row mx-2">
-                {nextDays.slice(1, 5).map((day, index) => (
-                  <View key={index} className="flex-col items-center mx-4">
+              {loading ? (
+                <WeatherLoadingSpinner />
+              ) : (
+                <View className="flex-row items-center justify-between">
+                  <View className="ml-2 mr-3">
                     <Image
-                      source={icons.pointer}
-                      className="w-6 h-6"
+                      source={icons.wind}
+                      className="w-12 h-12"
                       resizeMode="contain"
-                      style={{
-                        tintColor: "white",
-                        transform: [
-                          {
-                            rotate: `${calculateRotation(
-                              dailyWindDirections[index]
-                            )}deg`,
-                          },
-                        ],
-                      }}
+                      style={{ tintColor: "white" }}
                     />
-                    <Text className="text-white text-md mt-2 font-medium">
-                      {loading ? "Loading..." : dailyWindSpeeds[index] || "N/A"}
-                    </Text>
-                    <Text className="text-white text-md mb-2 font-medium">
-                      {loading
-                        ? "Loading..."
-                        : dailyWindDirections[index] || "N/A"}
-                      °
-                    </Text>
                   </View>
-                ))}
+                  <View className="flex-row mx-2">
+                    {nextDays.slice(1, 5).map((day, index) => (
+                      <View key={index} className="flex-col items-center mx-4">
+                        <Image
+                          source={icons.pointer}
+                          className="w-6 h-6"
+                          resizeMode="contain"
+                          style={{
+                            tintColor: "white",
+                            transform: [
+                              {
+                                rotate: `${calculateRotation(
+                                  dailyWindDirections[index]
+                                )}deg`,
+                              },
+                            ],
+                          }}
+                        />
+                        <Text className="text-white text-md mt-2 font-medium">
+                          {loading
+                            ? "Loading..."
+                            : dailyWindSpeeds[index] || "N/A"}
+                        </Text>
+                        <Text className="text-white text-md mb-2 font-medium">
+                          {loading
+                            ? "Loading..."
+                            : dailyWindDirections[index] || "N/A"}
+                          °
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
               )}
             </View>
           </LinearGradient>
 
-          <TouchableOpacity
-            onPress={() => router.push("/summary" as never)}
+          {/* Fishing Cards Section */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             className="mt-6"
           >
-            <LinearGradient
-              colors={["#4a90e2", "#0e4483"]}
-              start={{ x:.0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              locations={[0, 1]}
-              style={{
-                borderRadius: 10,
-                padding: 16,
-              }}
-            >
-              <View className="flex-row items-center justify-between">
-                <Text className="text-white text-lg font-semibold">Fishing Summary</Text>
-                <Ionicons name="fish" size={24} color="white" />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+            {/* Fishing Summary Card */}
+            <View className="mr-4">
+              <ImageBackground
+                source={require("../../assets/images/fishing2.jpg")}
+                className="h-[220px] w-[300px] rounded-md overflow-hidden"
+                imageStyle={{ borderRadius: 12 }}
+              >
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.9)"]}
+                  className="absolute bottom-0 w-full p-4"
+                >
+                  <View className="space-y-1 w-full">
+                    <View>
+                      <Text className="text-white text-2xl font-semibold">
+                        Fishing Summary
+                      </Text>
+                      <Text className="text-white/80 text-sm mb-2">
+                        Tracked and analyzed fishing routes
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      className="bg-white/20 px-4 py-2 rounded-md border border-white w-full"
+                      onPress={() => router.push("/summary" as never)}
+                    >
+                      <Text className="text-white font-medium text-center">
+                        View Details
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
+              </ImageBackground>
+            </View>
+
+            {/* Fish Analysis Card */}
+            <View className="mr-4">
+              <ImageBackground
+                source={require("../../assets/images/fishing1.jpg")}
+                className="h-[220px] w-[300px] rounded-md overflow-hidden"
+                imageStyle={{ borderRadius: 12 }}
+              >
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.9)"]}
+                  className="absolute bottom-0 w-full p-4"
+                >
+                  <View className="space-y-1 w-full">
+                    <View>
+                      <Text className="text-white text-2xl font-semibold">
+                        Most Caught Areas
+                      </Text>
+                      <Text className="text-white/80 text-sm mb-2">
+                        Discover popular fishing spots
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      className="bg-white/20 px-4 py-2 rounded-md border border-white w-full"
+                      onPress={() => router.push("/fish-analysis" as never)}
+                    >
+                      <Text className="text-white font-medium text-center">
+                        View Details
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
+              </ImageBackground>
+            </View>
+          </ScrollView>
 
           {/* Wave Height Chart */}
           <View className="mt-6">
