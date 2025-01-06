@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.seasense.app"
+      "bundleIdentifier": "com.seasense.app",
+      "config": {
+        "googleMapsApiKey": "YOUR_IOS_API_KEY_HERE"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +26,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.geomapper.map",
-      "googleServicesFile": "./android/google-services.json"
+      "googleServicesFile": "./android/google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_ANDROID_API_KEY_HERE"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
