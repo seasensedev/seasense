@@ -5,7 +5,6 @@ import { collection, onSnapshot, where, query } from "firebase/firestore";
 import { db, auth } from "../../config/firebaseConfig";
 import icons from "../../constants/icons";
 import { signOut } from "firebase/auth";
-import { Animated } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 interface Track {

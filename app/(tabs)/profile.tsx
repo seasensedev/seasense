@@ -102,7 +102,6 @@ const Profile = () => {
 
           const db = getFirestore();
 
-          // Fetch Fishing Spots
           const catchQuery = query(
             collection(db, "log_catch"),
             where("userId", "==", currentUser.uid)
@@ -126,7 +125,6 @@ const Profile = () => {
 
           setFishingSpots(spots);
 
-            // Fetch Tracks
         const trackQuery = query(
           collection(getFirestore(), "tracks"), 
           where("userId", "==", currentUser.uid)

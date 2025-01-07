@@ -105,7 +105,7 @@ const Temperature: React.FC<TemperatureDisplayProps> = ({ temperature }) => {
   return (
     <>
       <View
-        className={`absolute top-0 left-0 right-0 p-5 py-4 z-10 ${getTemperatureColor(
+        className={`absolute top-0 left-0 right-0 p-5 py-4 z-0 ${getTemperatureColor(
           temperature
         )}`}
       >

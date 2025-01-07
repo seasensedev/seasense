@@ -20,11 +20,16 @@ const LoginButton: React.FC<LoginButtonProps> = ({
   ...props
 }) => {
   return (
-    <TouchableOpacity {...props} className="bg-[#1e5aa0] rounded-full py-3 px-36 items-center mb-2">
-      <View className="flex-row items-center space-x-3">
-        <Text className="text-white text-lg font-semibold">{title}</Text>
-      </View>
-    </TouchableOpacity>
+    <View className="w-full px-3">
+      <TouchableOpacity
+        {...props}
+        className="bg-[#1e5aa0] rounded-full py-3 items-center mb-2"
+      >
+        <View className="flex-row items-center space-x-3">
+          <Text className="text-white text-lg font-semibold">{title}</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 };
 
