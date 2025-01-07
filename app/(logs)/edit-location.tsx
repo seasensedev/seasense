@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { captureRef } from "react-native-view-shot";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -197,6 +197,7 @@ const EditLocation = () => {
       <View style={styles.container} className="mt-2">
         <MapView
           style={styles.map}
+          provider={PROVIDER_GOOGLE}
           mapType="standard"
           region={region}
           onRegionChange={handleRegionChange}

@@ -9,7 +9,7 @@ import {
   Modal,
   Animated,
 } from "react-native";
-import MapView, { Polyline, Marker } from "react-native-maps";
+import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import Toast from "@/components/Toaster/Toast";
 import Temperature from "../../components/Temperature/temperature";
@@ -212,14 +212,10 @@ export const TrackingMap = () => {
         showToast("No location data available");
         return null;
       }
-  
-      // Add console.log for debugging
-      console.log("Starting to save tracking data...");
       
       const { latitude, longitude } = location;
       const weatherData = await fetchWeatherData(latitude, longitude);
   
-      // Create a proper timestamp object
       const currentTime = new Date();
       const timestamp = {
         date: currentTime.toLocaleDateString(),
@@ -227,7 +223,6 @@ export const TrackingMap = () => {
         timestamp: currentTime.getTime()
       };
   
-      // Structure the track data properly
       const trackData = {
         userId: auth.currentUser.uid,
         routeCoordinates: routeCoordinates,
@@ -250,13 +245,11 @@ export const TrackingMap = () => {
         isHidden: false
       };
   
-      console.log("Track data structured:", trackData); // Debug log
+      console.log("Track data structured:", trackData); 
   
-      // Save to tracking_data collection
       const docRef = await addDoc(collection(db, "tracking_data"), trackData);
       console.log("Document written with ID: ", docRef.id);
   
-      // Also save to data_collection
       await logTrackingData({
         userId: auth.currentUser.uid,
         action: 'create',
@@ -285,7 +278,6 @@ export const TrackingMap = () => {
     }
   };
   
-  // Add helper function for weather data
   const fetchWeatherData = async (latitude: number, longitude: number) => {
     try {
       const response = await fetch(
@@ -361,11 +353,11 @@ export const TrackingMap = () => {
           setWatchPositionSubscription(null);
         }
   
-        console.log("Stopping tracking and saving data..."); // Debug log
+        console.log("Stopping tracking and saving data...");
         const sessionId = await saveTrackingDataToFirestore();
   
         if (sessionId) {
-          console.log("Track saved with ID:", sessionId); // Debug log
+          console.log("Track saved with ID:", sessionId); 
           setTrackingSessionId(sessionId);
           showToast("Track saved successfully!");
         } else {
@@ -377,7 +369,6 @@ export const TrackingMap = () => {
       } finally {
         setIsSaving(false);
         setIsLoading(false);
-        // Reset states
         setRouteCoordinates([]);
         setPinnedLocations([]);
         setElapsedTime(0);
@@ -395,7 +386,6 @@ export const TrackingMap = () => {
         prev.filter((pin) => pin.timestamp !== lastPinnedLocation.timestamp)
       );
 
-      // Log pin removal
       await logTrackingData({
         userId: auth.currentUser!.uid,
         action: 'update',
@@ -458,7 +448,6 @@ export const TrackingMap = () => {
       setLastPinnedLocation(newPin);
       setShowUndo(true);
 
-      // Log pin creation
       if (trackingSessionId) {
         await logTrackingData({
           userId: auth.currentUser.uid,
@@ -577,6 +566,7 @@ export const TrackingMap = () => {
       {location ? (
         <MapView
           ref={mapRef}
+          provider={PROVIDER_GOOGLE}
           style={styles.map}
           mapType="standard"
           customMapStyle={mapThemes[currentTheme]}

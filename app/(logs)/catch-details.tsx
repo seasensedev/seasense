@@ -13,7 +13,7 @@ import {
   Alert,
   BackHandler,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
@@ -167,6 +167,7 @@ const CatchDetails = () => {
         <View className="h-[200px] overflow-hidden">
           <MapView
             style={styles.map}
+            provider={PROVIDER_GOOGLE}
             mapType="standard"
             initialRegion={{
               latitude: lat,

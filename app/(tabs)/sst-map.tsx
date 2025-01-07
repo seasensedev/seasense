@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import MapView, { Marker, UrlTile, Region, MapPressEvent, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useMapTheme } from '../../context/MapThemeContext';
@@ -189,7 +189,6 @@ const SSTMap = () => {
   };
 
   const handlePress = (event: MapPressEvent) => {
-    // Removed GeoJSON handling
   }
 
   useEffect(() => {

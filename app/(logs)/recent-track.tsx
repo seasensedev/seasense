@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
 import { doc, getDoc, deleteDoc, addDoc, collection, updateDoc } from "firebase/firestore";
 import { db, auth } from "../../config/firebaseConfig"; 
@@ -325,6 +325,7 @@ const RecentTrack = () => {
         <View className="w-full h-[400px]">
           <MapView
             className="w-full h-full"
+            provider={PROVIDER_GOOGLE}
             initialRegion={getCenterAndDeltas(trackData.routeCoordinates)}
             customMapStyle={mapThemes[currentTheme]}
           >

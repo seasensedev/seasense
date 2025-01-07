@@ -13,7 +13,7 @@ import {
   RefreshControl
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { getFirestore, doc, deleteDoc } from "firebase/firestore";
 import { getStorage, ref, deleteObject } from "firebase/storage";
@@ -229,6 +229,7 @@ const EditCatches = () => {
         <View className="h-[200px] overflow-hidden">
           <MapView
             style={styles.map}
+            provider={PROVIDER_GOOGLE}
             mapType="standard"
             initialRegion={{
               latitude: lat,

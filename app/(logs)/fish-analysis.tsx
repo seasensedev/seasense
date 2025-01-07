@@ -1,68 +1,150 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, SafeAreaView, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
-import MapView, { Marker, Heatmap } from 'react-native-maps';
+import MapView, { Marker, Heatmap, Circle } from 'react-native-maps';
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
-import { BarChart } from "react-native-chart-kit";
+import { BarChart, LineChart } from "react-native-chart-kit";
 
-interface FishCatchData {
+interface FishingData {
   location: {
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+    currentCity: string;
+    details: {
+      city: string;
+      district: string;
+      region: string;
+      country: string;
+      street: string;
+    };
+  };
+  timestamp: {
+    date: string;
+    time: string;
+  };
+  weather: {
+    temperature: number;
+    windSpeed: number;
+    windDirection: number;
+  };
+  elapsedTime: number;
+  userId: string;
+}
+
+interface AreaStatistics {
+  coordinates: {
     latitude: number;
     longitude: number;
   };
-  area: string;
-  species: string;
-  quantity: number;
-  timestamp: string;
+  cityInfo: {
+    city: string;
+    district: string;
+  };
+  totalCatches: number;
+  averageTemp: number;
+  popularTimes: Record<string, number>;
+  totalUsers: number;
 }
-
-// Predefined fishing areas in Davao Gulf
-const fishingAreas = [
-  { area: "Malita", coordinates: { latitude: 6.9167, longitude: 125.6000 } },
-  { area: "Sta. Maria", coordinates: { latitude: 6.5667, longitude: 125.4833 } },
-  { area: "Talomo", coordinates: { latitude: 7.0667, longitude: 125.6167 } },
-  { area: "Tibungco", coordinates: { latitude: 7.2333, longitude: 125.6833 } },
-  { area: "Bunawan", coordinates: { latitude: 7.2167, longitude: 125.6333 } },
-];
 
 export default function FishAnalysis() {
   const [loading, setLoading] = useState(true);
-  const [fishCatchData, setFishCatchData] = useState<FishCatchData[]>([]);
+  const [fishingData, setFishingData] = useState<FishingData[]>([]);
+  const [areaStats, setAreaStats] = useState<Record<string, AreaStatistics>>({});
   const { currentTheme } = useMapTheme();
-  const [areaStats, setAreaStats] = useState<Record<string, number>>({});
+
+  const calculateAreaStatistics = (data: FishingData[]) => {
+    const stats: Record<string, AreaStatistics> = {};
+
+    // Group data by city
+    data.forEach(item => {
+      const cityKey = `${item.location.details.city} - ${item.location.details.district}`;
+      if (!stats[cityKey]) {
+        stats[cityKey] = {
+          coordinates: item.location.coordinates,
+          cityInfo: {
+            city: item.location.details.city,
+            district: item.location.details.district
+          },
+          totalCatches: 0,
+          averageTemp: 0,
+          popularTimes: {},
+          totalUsers: 0
+        };
+      }
+
+      const timeKey = item.timestamp.time.split(':')[0];
+      stats[cityKey].popularTimes[timeKey] = (stats[cityKey].popularTimes[timeKey] || 0) + 1;
+      stats[cityKey].totalCatches++;
+      stats[cityKey].averageTemp = (stats[cityKey].averageTemp * (stats[cityKey].totalCatches - 1) + 
+        item.weather.temperature) / stats[cityKey].totalCatches;
+
+      const uniqueUsers = new Set([...Array.from(new Set([item.userId]))]);
+      stats[cityKey].totalUsers = uniqueUsers.size;
+    });
+
+    return stats;
+  };
+
+  const isWithinRadius = (
+    point: { latitude: number; longitude: number },
+    center: { latitude: number; longitude: number },
+    radius: number
+  ) => {
+    const R = 6371e3; 
+    const φ1 = point.latitude * Math.PI / 180;
+    const φ2 = center.latitude * Math.PI / 180;
+    const Δφ = (center.latitude - point.latitude) * Math.PI / 180;
+    const Δλ = (center.longitude - point.longitude) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+
+    return distance <= radius;
+  };
 
   useEffect(() => {
-    const fetchFishCatchData = async () => {
+    const fetchFishingData = async () => {
       if (auth.currentUser?.isAnonymous) {
         setLoading(false);
         return;
       }
 
       try {
-        const q = query(collection(db, 'fish_catch_data'));
+        const q = query(
+          collection(db, 'tracking_data'),
+          orderBy('createdAt', 'desc'),
+          limit(100) 
+        );
+        
         const querySnapshot = await getDocs(q);
-        const catches: FishCatchData[] = [];
-        const areaCount: Record<string, number> = {};
+        const data: FishingData[] = [];
 
         querySnapshot.forEach((doc) => {
-          const data = doc.data() as FishCatchData;
-          catches.push(data);
-          areaCount[data.area] = (areaCount[data.area] || 0) + data.quantity;
+          const docData = doc.data();
+          if (docData.location && docData.location.coordinates) {
+            data.push(docData as FishingData);
+          }
         });
 
-        setFishCatchData(catches);
-        setAreaStats(areaCount);
+        setFishingData(data);
+        setAreaStats(calculateAreaStatistics(data));
       } catch (error) {
-        console.error('Error fetching fish catch data:', error);
+        console.error('Error fetching fishing data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFishCatchData();
+    fetchFishingData();
   }, []);
 
   if (loading) {
@@ -86,57 +168,70 @@ export default function FishAnalysis() {
 
   return (
     <SafeAreaView className="flex-1">
-      {/* Map Container */}
       <View className="h-[300px]">
         <MapView
           style={StyleSheet.absoluteFillObject}
           initialRegion={{
-            latitude: 6.9167,
-            longitude: 125.6000,
-            latitudeDelta: 0.5,
-            longitudeDelta: 0.5,
+            latitude: 7.0667, 
+            longitude: 125.6167,
+            latitudeDelta: 0.8,
+            longitudeDelta: 0.8,
           }}
           customMapStyle={mapThemes[currentTheme]}
         >
-          {fishingAreas.map((area) => (
-            <Marker
-              key={area.area}
-              coordinate={area.coordinates}
-              title={area.area}
-              description={`Catch count: ${areaStats[area.area] || 0}`}
-            >
-              <View className="bg-white p-2 rounded-full border-2 border-[#1e5aa0]">
-                <Ionicons name="fish" size={24} color="#1e5aa0" />
-              </View>
-            </Marker>
+          {Object.entries(areaStats).map(([cityKey, stats]) => (
+            <React.Fragment key={cityKey}>
+              <Marker
+                coordinate={stats.coordinates}
+                title={`${stats.cityInfo.city}`}
+                description={`${stats.cityInfo.district} - ${stats.totalCatches} catches`}
+              >
+                <View className="bg-white p-2 rounded-full border-2 border-[#1e5aa0]">
+                  <Ionicons name="fish" size={24} color="#1e5aa0" />
+                </View>
+              </Marker>
+              <Circle
+                center={stats.coordinates}
+                radius={5000}
+                fillColor="rgba(30, 90, 160, 0.1)"
+                strokeColor="rgba(30, 90, 160, 0.3)"
+              />
+            </React.Fragment>
           ))}
         </MapView>
       </View>
 
-      {/* Scrollable Analytics Container */}
       <ScrollView>
         <View className="px-4 pt-4">
-          <Text className="font-pbold text-xl text-[#1e5aa0] mb-4">Fish Catch Analysis</Text>
+          <View>
+          <Text className="font-pbold text-xl text-[#1e5aa0]">Fishing Activity Analysis</Text>
+          <Text className="font-pmedium text-gray-600 mb-4">Most caught fishes within respective area based by users activities</Text>
+          </View>
 
           {/* Area Statistics */}
           <View className="bg-white rounded-lg p-4 shadow-sm mb-6">
-            <Text className="font-pbold text-[#1e5aa0] mb-4">Catch by Area</Text>
-            {fishingAreas.map((area) => (
-              <View key={area.area} className="flex-row justify-between mb-2">
-                <Text className="font-pmedium">{area.area}</Text>
-                <Text className="font-pbold">{areaStats[area.area] || 0} catches</Text>
+            <Text className="font-pbold text-[#1e5aa0] mb-4">Area Statistics</Text>
+            {Object.entries(areaStats).map(([cityKey, stats]) => (
+              <View key={cityKey} className="mb-4">
+                <Text className="font-pbold text-lg">{stats.cityInfo.city}</Text>
+                <Text className="font-pmedium text-gray-600 mb-2">{stats.cityInfo.district}</Text>
+                <View className="ml-4">
+                  <Text>Total Activities: {stats.totalCatches}</Text>
+                  <Text>Unique Users: {stats.totalUsers}</Text>
+                  <Text>Avg. Temperature: {stats.averageTemp.toFixed(1)}°C</Text>
+                </View>
               </View>
             ))}
           </View>
 
-          {/* Catch Distribution Chart */}
+          {/* Activity Distribution Chart */}
           <View className="bg-white rounded-lg p-4 shadow-sm mb-6">
-            <Text className="font-pbold text-[#1e5aa0] mb-4">Catch Distribution</Text>
+            <Text className="font-pbold text-[#1e5aa0] mb-4">Activity Distribution</Text>
             <BarChart
               data={{
-                labels: fishingAreas.map(area => area.area),
+                labels: Object.keys(areaStats),
                 datasets: [{
-                  data: fishingAreas.map(area => areaStats[area.area] || 0)
+                  data: Object.values(areaStats).map(stats => stats.totalCatches)
                 }]
               }}
               width={Dimensions.get("window").width - 48}
@@ -148,12 +243,8 @@ export default function FishAnalysis() {
                 decimalPlaces: 0,
                 color: (opacity = 1) => `rgba(30, 90, 160, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
-                  borderRadius: 16
-                },
-                propsForLabels: {
-                  fontSize: 10
-                }
+                style: { borderRadius: 16 },
+                propsForLabels: { fontSize: 10 }
               }}
               style={{
                 marginVertical: 8,
@@ -161,7 +252,7 @@ export default function FishAnalysis() {
               }}
               verticalLabelRotation={45}
               yAxisLabel=""
-              yAxisSuffix=" catches"
+              yAxisSuffix=" activities"
             />
           </View>
         </View>

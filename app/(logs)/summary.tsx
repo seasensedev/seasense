@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, SafeAreaView, ActivityIndicator, ScrollView, Dimensions, Alert } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
@@ -194,6 +194,7 @@ export default function Summary() {
       <View className="h-[300px]">
         <MapView
           style={StyleSheet.absoluteFillObject}
+          provider={PROVIDER_GOOGLE}
           initialRegion={
             trackingData.length > 0
               ? getBoundsOfAll(trackingData)
