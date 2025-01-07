@@ -11,13 +11,26 @@ import {
 import { doc, getDoc } from 'firebase/firestore';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import { AuthSessionResult } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export const useAuth = () => {
+interface AuthReturn {
+  user: User | null;
+  userData: { firstName: string; lastName: string } | null;
+  isLoading: boolean;
+  signUpWithEmailAndPassword: (email: string, password: string) => Promise<User>;
+  loginWithEmailAndPassword: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<AuthSessionResult>;
+  isNewUser: boolean;
+}
+
+export const useAuth = (): AuthReturn => {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<{ firstName: string; lastName: string } | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '246358053582-95e65gm2ti0chd85b9dmrs8dleiu63rn.apps.googleusercontent.com',
     androidClientId: '246358053582-95e65gm2ti0chd85b9dmrs8dleiu63rn.apps.googleusercontent.com',
@@ -37,6 +50,7 @@ export const useAuth = () => {
         setUser(null);
         setUserData(null);
       }
+      setIsLoading(false);
     });
     return unsubscribe;
   }, []);
@@ -72,10 +86,11 @@ export const useAuth = () => {
   return {
     user,
     userData,
+    isLoading,
     signUpWithEmailAndPassword,
     loginWithEmailAndPassword,
     signOut,
-    signInWithGoogle: () => promptAsync(),
+    signInWithGoogle: () => promptAsync() as Promise<AuthSessionResult>,
     isNewUser,
   };
 };

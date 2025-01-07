@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import * as Notifications from 'expo-notifications';
-import { doc, getDoc } from 'firebase/firestore';
-import { getFirestore } from 'firebase/firestore';
+import LoadingScreen from "./loading-screen";
 import SplashScreen from "../app/splash-screen";
 import { useRouter } from "expo-router";
 import { useAuth } from "../hooks/useAuth";
-import { SafeAreaView, ActivityIndicator } from "react-native";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -15,49 +13,52 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export default function Index() {
+const SignedIn = () => {
   const router = useRouter();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    const checkUserStatus = async () => {
-      if (user) {
-        const db = getFirestore();
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        
-        router.push('/home');
-      } else {
-        setLoading(false);
-      }
-    };
+    try {
+      router.replace('/home');
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
+  }, []);
+  return null;
+};
 
+const SignedOut = () => {
+  return <SplashScreen />;
+};
+
+export default function Index() {
+  const { user, isLoading } = useAuth();
+  
+  useEffect(() => {
     registerForPushNotificationsAsync();
-    checkUserStatus();
-  }, [user, router]);
+  }, []);
 
   const registerForPushNotificationsAsync = async () => {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    
-    if (finalStatus !== 'granted') {
-      return;
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+    } catch (error) {
+      console.error('Error registering for push notifications:', error);
     }
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView className="bg-[#0e4483] h-full flex justify-center items-center">
-        <ActivityIndicator size="large" color="#ffffff" />
-      </SafeAreaView>
-    );
-  }
-
-  return <SplashScreen />;
+  return (
+    <>
+      {isLoading ? (
+        <LoadingScreen />
+      ) : user ? (
+        <SignedIn />
+      ) : (
+        <SignedOut />
+      )}
+    </>
+  );
 }

@@ -1,11 +1,12 @@
 import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import NetInfo from '@react-native-community/netinfo';
 import { Alert, View, Text } from 'react-native';
 import { MapThemeProvider } from '../context/MapThemeContext';
 import { LocationProvider } from '../context/LocationContext';
 import { ErrorBoundary } from 'react-error-boundary';
+import { OfflineDataProvider } from '../context/OfflineDataContext';
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -29,41 +30,54 @@ export default function RootLayout() {
     "Poppins-Thin": require("../assets/fonts/Poppins-Thin.ttf"),
   });
 
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+
   useEffect(() => {
-    // Font loading effect
     if (error) throw error;
     if (fontsLoaded) SplashScreen.hideAsync();
 
     const unsubscribe = NetInfo.addEventListener(state => {
-      if (!state.isConnected) {
+      if (!state.isConnected && !isOfflineMode) {
         Alert.alert(
           "No Internet Connection",
-          "This app requires an internet connection to function properly.",
-          [{ text: "OK" }]
+          "Would you like to continue in offline mode? Some features may be limited.",
+          [
+            {
+              text: "Enable Offline Mode",
+              onPress: () => setIsOfflineMode(true),
+              style: "default"
+            },
+            {
+              text: "Try Again",
+              onPress: () => NetInfo.fetch(),
+              style: "cancel"
+            }
+          ],
+          { cancelable: false }
         );
       }
     });
 
-    // Cleanup subscription
     return () => unsubscribe();
-  }, [fontsLoaded, error]);
+  }, [fontsLoaded, error, isOfflineMode]);
 
   if (!fontsLoaded && !error) return null;
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <LocationProvider>
-        <MapThemeProvider>
-          <Stack screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-          </Stack>
-        </MapThemeProvider>
-      </LocationProvider>
+      <OfflineDataProvider>
+        <LocationProvider>
+          <MapThemeProvider>
+            <Stack screenOptions={{
+              headerShown: false,
+            }}>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+            </Stack>
+          </MapThemeProvider>
+        </LocationProvider>
+      </OfflineDataProvider>
     </ErrorBoundary>
   );
 }
