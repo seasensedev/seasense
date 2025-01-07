@@ -11,6 +11,7 @@ import {
   InteractionManager,
   ActivityIndicator,
   ImageBackground,
+  ToastAndroid,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
@@ -23,8 +24,10 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useOfflineData } from '../../context/OfflineDataContext';
 
 const Home = () => {
+  const { isOffline } = useOfflineData();
   const [hourlyWaveHeights, setHourlyWaveHeights] = useState<number[]>([]);
   const [hourlyWaveDirections, setHourlyWaveDirections] = useState<number[]>(
     []
@@ -113,7 +116,6 @@ const Home = () => {
         marineResponse.json(),
       ]);
 
-      // Batch state updates
       InteractionManager.runAfterInteractions(() => {
         setTemperature(weatherData.current.temperature_2m);
         setWindSpeed(weatherData.current.wind_speed_10m);
@@ -193,9 +195,30 @@ const Home = () => {
     loading,
   ]);
 
-  const onRefresh = () => {
+  const showNetworkError = () => {
+    ToastAndroid.showWithGravity(
+      'Network Error: You are currently offline',
+      ToastAndroid.LONG,
+      ToastAndroid.BOTTOM
+    );
+  };
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    getWeatherData();
+    
+    if (isOffline) {
+      showNetworkError();
+      setRefreshing(false);
+      return;
+    }
+
+    try {
+      await getWeatherData();
+    } catch (error) {
+      showNetworkError();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const weatherIcons: { [key: number]: any; default: any } = {
@@ -221,7 +244,7 @@ const Home = () => {
   };
 
   const getWeatherDescription = (code: number | null) => {
-    if (code === null) return "Data Unavailable";
+    if (code === null) return "Error";
     switch (code) {
       case 0:
         return "Clear Sky";
