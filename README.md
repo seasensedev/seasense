@@ -1,4 +1,4 @@
-![seasense-bg](https://github.com/user-attachments/assets/2236bfea-42ab-4087-a8ea-0e6dd9788f5b)
+![seasense-hero](https://github.com/user-attachments/assets/f42e53b4-39ec-4fb8-91a0-6b76f3093df0)
 
 > [!NOTE]
 > Our capstone project is still in progress in development. This is still not working well and we are addressing some challenges. 
