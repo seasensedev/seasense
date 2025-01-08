@@ -2,7 +2,7 @@
   "expo": {
     "name": "SeaSense",
     "slug": "seasense",
-    "version": "1.0.3",
+    "version": "1.1.4-beta",
     "orientation": "portrait",
     "icon": "./assets/images/seasense-app-icon.png",
     "scheme": "seasense",
@@ -29,7 +29,7 @@
       "googleServicesFile": "./android/google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_ANDROID_API_KEY_HERE"
+          "apiKey": "AIzaSyBAj3BvHU3gE_x7YyiW28RaP9Px7Ffrd60"
         }
       }
     },

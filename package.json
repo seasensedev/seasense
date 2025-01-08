@@ -2,7 +2,7 @@
   "name": "seasense",
   "scheme": "SeaSense",
   "main": "expo-router/entry",
-  "version": "1.0.3",
+  "version": "1.1.4-beta",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",

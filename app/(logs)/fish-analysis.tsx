@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, SafeAreaView, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
-import MapView, { Marker, Heatmap, Circle } from 'react-native-maps';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useMapTheme } from '../../context/MapThemeContext';
 import { mapThemes } from '../../constants/mapStyles';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
-import { BarChart, LineChart } from "react-native-chart-kit";
+import { BarChart } from "react-native-chart-kit";
 
 interface FishingData {
   location: {
@@ -170,6 +170,7 @@ export default function FishAnalysis() {
     <SafeAreaView className="flex-1">
       <View className="h-[300px]">
         <MapView
+          provider={PROVIDER_GOOGLE}
           style={StyleSheet.absoluteFillObject}
           initialRegion={{
             latitude: 7.0667, 
