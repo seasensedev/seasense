@@ -2,7 +2,7 @@
   "expo": {
     "name": "SeaSense",
     "slug": "seasense",
-    "version": "1.1.4-beta",
+    "version": "1.1.5-beta",
     "orientation": "portrait",
     "icon": "./assets/images/seasense-app-icon.png",
     "scheme": "seasense",
