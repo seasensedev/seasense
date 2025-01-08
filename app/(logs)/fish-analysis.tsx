@@ -62,6 +62,8 @@ export default function FishAnalysis() {
 
     // Group data by city
     data.forEach(item => {
+      if (!item.location?.details?.city || !item.location?.details?.district) return;
+      
       const cityKey = `${item.location.details.city} - ${item.location.details.district}`;
       if (!stats[cityKey]) {
         stats[cityKey] = {
@@ -77,11 +79,15 @@ export default function FishAnalysis() {
         };
       }
 
-      const timeKey = item.timestamp.time.split(':')[0];
+      const timeKey = item.timestamp?.time?.split(':')[0] || '0';
       stats[cityKey].popularTimes[timeKey] = (stats[cityKey].popularTimes[timeKey] || 0) + 1;
       stats[cityKey].totalCatches++;
-      stats[cityKey].averageTemp = (stats[cityKey].averageTemp * (stats[cityKey].totalCatches - 1) + 
-        item.weather.temperature) / stats[cityKey].totalCatches;
+
+      // Only include temperature if it exists
+      if (item.weather?.temperature) {
+        const currentTotal = stats[cityKey].averageTemp * (stats[cityKey].totalCatches - 1);
+        stats[cityKey].averageTemp = (currentTotal + item.weather.temperature) / stats[cityKey].totalCatches;
+      }
 
       const uniqueUsers = new Set([...Array.from(new Set([item.userId]))]);
       stats[cityKey].totalUsers = uniqueUsers.size;
@@ -130,8 +136,18 @@ export default function FishAnalysis() {
 
         querySnapshot.forEach((doc) => {
           const docData = doc.data();
-          if (docData.location && docData.location.coordinates) {
-            data.push(docData as FishingData);
+          // Only include entries that have valid location data
+          if (docData.location?.coordinates?.latitude && docData.location?.coordinates?.longitude) {
+            // Ensure weather object exists even if empty
+            const fishingData: FishingData = {
+              ...docData,
+              weather: docData.weather || {
+                temperature: 0,
+                windSpeed: 0,
+                windDirection: 0
+              }
+            } as FishingData;
+            data.push(fishingData);
           }
         });
 
