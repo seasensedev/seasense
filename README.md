@@ -12,7 +12,7 @@
 ### Cloning the Forked Repository
 1. Clone the forked repository to your local machine using:
    ```sh
-   git clone https://github.com/devseasense/seasense.git
+   git clone https://github.com/seasensedev/seasense.git
 
 2. Navigate into the repository's directory:
    ```sh
